@@ -1,0 +1,29 @@
+name: ldk_node_flutter_quickstart
+description: A new Flutter project.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.19.2 <3.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+
+  ldk_helper:
+    git:
+      url: https://github.com/LtbLightning/ldk_helper.git
+      ref: initial-setup
+
+  ldk_node_flutter:
+    git:
+      url: https://github.com/LtbLightning/ldk_node_flutter.git
+      ref: main
+
+  path_provider: ^2.0.12
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+flutter:
+  uses-material-design: true
