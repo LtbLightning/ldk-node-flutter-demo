@@ -23,7 +23,18 @@ ThemeData themeData() {
         border: outlineInputBorder);
   }
 
+  var textTheme = const TextTheme(
+      displayLarge: TextStyle(
+          color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16),
+      bodySmall: TextStyle(
+          fontWeight: FontWeight.w600, fontSize: 12, color: Colors.black),
+      displaySmall: TextStyle(
+          fontWeight: FontWeight.w600, fontSize: 12, color: Colors.black),
+      displayMedium: TextStyle(
+          fontWeight: FontWeight.w900, fontSize: 14, color: Colors.black));
   return ThemeData(
+      secondaryHeaderColor: Colors.indigoAccent,
       visualDensity: VisualDensity.comfortable,
+      textTheme: textTheme,
       inputDecorationTheme: inputDecorationTheme());
 }
