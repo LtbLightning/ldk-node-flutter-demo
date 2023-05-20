@@ -35,7 +35,7 @@ class _HomeState extends State<Home> {
         storageDirPath: alicePath,
         esploraServerUrl: esploraUrl,
         network: ldk.Network.Regtest,
-        listeningAddress: "10.0.0.116:9000",
+        listeningAddress: "0.0.0.0:8001",
         defaultCltvExpiryDelta: 144);
     ldk.Builder aliceBuilder = ldk.Builder.fromConfig(config: config);
     aliceNode = await aliceBuilder.build();
@@ -44,6 +44,7 @@ class _HomeState extends State<Home> {
   startNode() async {
     final _ = await aliceNode!.start();
     final res = await aliceNode!.nodeId();
+
     setState(() {
       aliceNodeId = res;
       displayText = "${aliceNodeId?.keyHex}.started successfully";
@@ -52,6 +53,7 @@ class _HomeState extends State<Home> {
 
   getNodeBalance() async {
     final alice = await aliceNode!.onChainBalance();
+
     if (kDebugMode) {
       print("alice's_balance: ${alice.confirmed}");
     }
@@ -61,25 +63,14 @@ class _HomeState extends State<Home> {
   }
 
   syncAliceNode() async {
+    print("syncing");
     await aliceNode!.syncWallets();
+    print("syncing");
     await getNodeBalance();
     await getChannels();
     setState(() {
       displayText = "${aliceNodeId!.keyHex} Sync Completed";
     });
-  }
-
-  Future<String> generateNewAddresses() async {
-    final alice = await aliceNode!.newFundingAddress();
-    if (kDebugMode) {
-      print("alice's address: ${alice.addressHex}");
-    }
-
-    setState(() {
-      address = alice.addressHex;
-      displayText = address;
-    });
-    return address;
   }
 
   getListeningAddress() async {
@@ -118,8 +109,6 @@ class _HomeState extends State<Home> {
     if (kDebugMode) {
       print("temporary channel opened");
     }
-    await nextEvent();
-    await aliceNode!.eventHandled();
   }
 
   nextEvent() async {
@@ -127,6 +116,7 @@ class _HomeState extends State<Home> {
     if (kDebugMode) {
       print(res.toString());
     }
+    await aliceNode!.eventHandled();
   }
 
   getNewAddress() async {
@@ -135,7 +125,7 @@ class _HomeState extends State<Home> {
       print(address.addressHex.toString());
     }
     setState(() {
-      displayText = "$address.addressHex";
+      displayText = "${address.addressHex}";
     });
   }
 
@@ -151,7 +141,7 @@ class _HomeState extends State<Home> {
     return invoice.toString();
   }
 
-  Future<void> sendPayments(String invoice) async {
+  Future<void> sendPayment(String invoice) async {
     final paymentHash =
         await aliceNode!.sendPayment(invoice: ldk.Invoice(hex: invoice));
     final res = await aliceNode!.paymentInfo(paymentHash: paymentHash);
@@ -206,6 +196,10 @@ class _HomeState extends State<Home> {
                 text: 'Get Listening Address',
                 callback: getListeningAddress,
               ),
+              SubmitButton(
+                text: 'Next Event',
+                callback: nextEvent,
+              ),
               /* ChannelsActionBar */
               ChannelsActionBar(openChannelCallBack: openChannel),
               channels.isEmpty
@@ -222,7 +216,7 @@ class _HomeState extends State<Home> {
                       channels: channels,
                       closeChannelCallBack: closeChannel,
                       receivePaymentCallBack: receivePayment,
-                      sendPaymentCallBack: sendPayments,
+                      sendPaymentCallBack: sendPayment,
                     )
             ],
           ),
