@@ -75,7 +75,7 @@ class _HomeState extends State<Home> {
 
   getListeningAddress() async {
     final alice = await aliceNode!.listeningAddress();
-    final id = "${aliceNodeId!.keyHex}@$alice";
+    final id = "${aliceNodeId!.keyHex}@${alice?.ip}:${alice!.port}";
     setState(() {
       displayText = "alice's node pubKey & Address : $id";
     });
