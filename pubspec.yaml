@@ -9,11 +9,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.2
-  ldk_node_flutter:
-    git:
-      url: https://github.com/LtbLightning/ldk_node_flutter.git
-      ref: main
   path_provider: ^2.0.12
+  ldk_node: ^0.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

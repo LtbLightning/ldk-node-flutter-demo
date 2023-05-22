@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:ldk_node_flutter/ldk_node_flutter.dart' as ldk;
+import 'package:ldk_node/ldk_node.dart' as ldk;
 
 class SubmitButton extends StatelessWidget {
   final String text;
@@ -40,8 +40,10 @@ popUpWidget(
       context: context,
       builder: (context) {
         return AlertDialog(
-          contentPadding: EdgeInsets.only(right: 20, left: 20, bottom: 30),
-          titlePadding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+          contentPadding:
+              const EdgeInsets.only(right: 20, left: 20, bottom: 30),
+          titlePadding:
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(
               Radius.circular(
@@ -195,7 +197,8 @@ class BalanceWidget extends StatelessWidget {
 }
 
 class ChannelsActionBar extends StatefulWidget {
-  final Future<void> Function(String address, int amount) openChannelCallBack;
+  final Future<void> Function(String host, int port, String nodeId, int amount)
+      openChannelCallBack;
   const ChannelsActionBar({Key? key, required this.openChannelCallBack})
       : super(key: key);
 
@@ -206,6 +209,8 @@ class ChannelsActionBar extends StatefulWidget {
 class _ChannelsActionBarState extends State<ChannelsActionBar> {
   final _formKey = GlobalKey<FormState>();
   String address = "";
+  int port = 0;
+  String nodeId = "";
   int amount = 0;
   @override
   Widget build(BuildContext context) {
@@ -227,7 +232,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                 context: context,
                 title: 'Open channel',
                 widget: SizedBox(
-                  height: 200,
+                  height: 290,
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -240,16 +245,63 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                               color: Colors.black.withOpacity(.8),
                               fontSize: 12,
                               fontWeight: FontWeight.w700),
-                          decoration: const InputDecoration(
-                              labelText: 'Node Pub Key & Address'),
+                          decoration:
+                              const InputDecoration(labelText: 'Node Id'),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter the nodePubKeyAndAddress ';
                             }
                             setState(() {
-                              address = value;
+                              nodeId = value;
                             });
                           },
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                showCursor: true,
+                                autofocus: true,
+                                style: TextStyle(
+                                    color: Colors.black.withOpacity(.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700),
+                                decoration: const InputDecoration(
+                                    labelText: 'Ip Address'),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Ip Address';
+                                  }
+                                  setState(() {
+                                    address = value;
+                                  });
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 2.5),
+                            Expanded(
+                              child: TextFormField(
+                                keyboardType: TextInputType.number,
+                                showCursor: true,
+                                autofocus: true,
+                                style: TextStyle(
+                                    color: Colors.black.withOpacity(.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700),
+                                decoration:
+                                    const InputDecoration(labelText: 'Port'),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your port number ';
+                                  }
+                                  setState(() {
+                                    port = int.parse(value.trim());
+                                  });
+                                },
+                              ),
+                            )
+                          ],
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
@@ -265,40 +317,23 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                               return 'Please enter the Amount';
                             }
                             setState(() {
-                              amount = int.parse(value);
+                              amount = int.parse(value.trim());
                             });
                           },
                         ),
-                        Container(
-                          width: double.infinity,
-                          height: 60,
-                          padding: const EdgeInsets.all(8.0),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(context).secondaryHeaderColor,
-                            ),
-                            onPressed: () async {
-                              if (_formKey.currentState!.validate()) {
-                                await widget.openChannelCallBack(
-                                    address, amount);
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
-                                }
+                        const SizedBox(height: 30),
+                        SubmitButton(
+                          text: 'Submit',
+                          callback: () async {
+                            if (_formKey.currentState!.validate()) {
+                              await widget.openChannelCallBack(
+                                  address, port, nodeId, amount);
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
                               }
-                            },
-                            child: const Text(
-                              'Submit',
-                              overflow: TextOverflow.clip,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  height: 1.5,
-                                  fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                        ),
+                            }
+                          },
+                        )
                       ],
                     ),
                   ),
@@ -424,7 +459,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                       context: context,
                       title: 'Receive',
                       widget: SizedBox(
-                        height: 200,
+                        height: 120,
                         child: Form(
                           key: _receiveKey,
                           child: Column(
@@ -447,36 +482,20 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                                   });
                                 },
                               ),
-                              Container(
-                                width: double.infinity,
-                                height: 60,
-                                padding: const EdgeInsets.all(8.0),
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Theme.of(context).secondaryHeaderColor,
-                                  ),
-                                  onPressed: () async {
-                                    if (_receiveKey.currentState!.validate()) {
-                                      await widget
-                                          .receivePaymentCallBack(amount);
-                                      if (context.mounted) {
-                                        Navigator.of(context).pop();
-                                      }
-                                    }
-                                  },
-                                  child: const Text(
-                                    'Submit',
-                                    overflow: TextOverflow.clip,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        height: 1.5,
-                                        fontWeight: FontWeight.w800),
-                                  ),
-                                ),
+                              const SizedBox(
+                                height: 5,
                               ),
+                              SubmitButton(
+                                text: 'Receive',
+                                callback: () async {
+                                  if (_receiveKey.currentState!.validate()) {
+                                    await widget.receivePaymentCallBack(amount);
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  }
+                                },
+                              )
                             ],
                           ),
                         ),
@@ -487,7 +506,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                       context: context,
                       title: 'Send',
                       widget: SizedBox(
-                        height: 200,
+                        height: 120,
                         child: Form(
                           key: _sendKey,
                           child: Column(
@@ -510,34 +529,20 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                                   });
                                 },
                               ),
-                              Container(
-                                width: double.infinity,
-                                height: 60,
-                                padding: const EdgeInsets.all(8.0),
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.black,
-                                  ),
-                                  onPressed: () async {
-                                    if (_sendKey.currentState!.validate()) {
-                                      await widget.sendPaymentCallBack(invoice);
-                                      if (context.mounted) {
-                                        Navigator.of(context).pop();
-                                      }
-                                    }
-                                  },
-                                  child: const Text(
-                                    'Submit',
-                                    overflow: TextOverflow.clip,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        height: 1.5,
-                                        fontWeight: FontWeight.w800),
-                                  ),
-                                ),
+                              const SizedBox(
+                                height: 5,
                               ),
+                              SubmitButton(
+                                text: 'Submit',
+                                callback: () async {
+                                  if (_sendKey.currentState!.validate()) {
+                                    await widget.sendPaymentCallBack(invoice);
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  }
+                                },
+                              )
                             ],
                           ),
                         ),
@@ -548,7 +553,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                       context: context,
                       title: 'Close channel',
                       widget: SizedBox(
-                        height: 200,
+                        height: 120,
                         child: Form(
                           key: _closeKey,
                           child: Column(
@@ -571,37 +576,22 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                                   });
                                 },
                               ),
-                              Container(
-                                width: double.infinity,
-                                height: 60,
-                                padding: const EdgeInsets.all(8.0),
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        Theme.of(context).secondaryHeaderColor,
-                                  ),
-                                  onPressed: () async {
-                                    if (_closeKey.currentState!.validate()) {
-                                      await widget.closeChannelCallBack(
-                                          widget.channels[index].channelId,
-                                          address);
-                                      if (context.mounted) {
-                                        Navigator.of(context).pop();
-                                      }
-                                    }
-                                  },
-                                  child: const Text(
-                                    'Submit',
-                                    overflow: TextOverflow.clip,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        height: 1.5,
-                                        fontWeight: FontWeight.w800),
-                                  ),
-                                ),
+                              const SizedBox(
+                                height: 5,
                               ),
+                              SubmitButton(
+                                text: 'Submit',
+                                callback: () async {
+                                  if (_closeKey.currentState!.validate()) {
+                                    await widget.closeChannelCallBack(
+                                        widget.channels[index].channelId,
+                                        address);
+                                    if (context.mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+                                  }
+                                },
+                              )
                             ],
                           ),
                         ),

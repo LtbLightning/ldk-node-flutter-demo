@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:ldk_node_flutter/ldk_node_flutter.dart' as ldk;
+import 'package:ldk_node/ldk_node.dart' as ldk;
 import 'package:ldk_node_flutter_quickstart/widgets/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -35,7 +35,7 @@ class _HomeState extends State<Home> {
         storageDirPath: alicePath,
         esploraServerUrl: esploraUrl,
         network: ldk.Network.Regtest,
-        listeningAddress: "0.0.0.0:8001",
+        listeningAddress: const ldk.SocketAddr(ip: '0.0.0.0', port: 7004),
         defaultCltvExpiryDelta: 144);
     ldk.Builder aliceBuilder = ldk.Builder.fromConfig(config: config);
     aliceNode = await aliceBuilder.build();
@@ -65,7 +65,7 @@ class _HomeState extends State<Home> {
   syncAliceNode() async {
     print("syncing");
     await aliceNode!.syncWallets();
-    print("syncing");
+    print("syncing complete");
     await getNodeBalance();
     await getChannels();
     setState(() {
@@ -100,11 +100,13 @@ class _HomeState extends State<Home> {
     }
   }
 
-  Future<void> openChannel(String bobNodePubKeyAndAddress, int amount) async {
+  Future<void> openChannel(
+      String host, int port, String nodeId, int amount) async {
     await aliceNode!.connectOpenChannel(
         channelAmountSats: amount,
         announceChannel: true,
-        nodePubkeyAndAddress: bobNodePubKeyAndAddress);
+        address: ldk.SocketAddr(ip: host, port: port),
+        nodeId: ldk.PublicKey(keyHex: nodeId));
 
     if (kDebugMode) {
       print("temporary channel opened");
@@ -136,7 +138,7 @@ class _HomeState extends State<Home> {
       if (kDebugMode) {
         print(invoice.hex.toString());
       }
-      displayText = "Receive payment invoice${invoice.toString()}";
+      displayText = "Receive payment invoice${invoice.hex.toString()}";
     });
     return invoice.toString();
   }
@@ -144,7 +146,7 @@ class _HomeState extends State<Home> {
   Future<void> sendPayment(String invoice) async {
     final paymentHash =
         await aliceNode!.sendPayment(invoice: ldk.Invoice(hex: invoice));
-    final res = await aliceNode!.paymentInfo(paymentHash: paymentHash);
+    final res = await aliceNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
     });
@@ -173,7 +175,7 @@ class _HomeState extends State<Home> {
               ResponseContainer(
                 text: displayText ?? '',
               ),
-              /* Balance */
+              // /* Balance */
               BalanceWidget(
                 balance: aliceBalance,
                 nodeId: aliceNodeId == null
@@ -181,12 +183,7 @@ class _HomeState extends State<Home> {
                     : aliceNodeId!.keyHex,
               ),
               const SizedBox(height: 20),
-              /* GetBalanceButton */
-              SubmitButton(
-                text: 'Get Balance',
-                callback: getNodeBalance,
-              ),
-              /* GetAddressButton */
+              // /* GetAddressButton */
               SubmitButton(
                 text: 'Get New Address',
                 callback: getNewAddress,
@@ -196,10 +193,10 @@ class _HomeState extends State<Home> {
                 text: 'Get Listening Address',
                 callback: getListeningAddress,
               ),
-              SubmitButton(
-                text: 'Next Event',
-                callback: nextEvent,
-              ),
+              // SubmitButton(
+              //   text: 'Next Event',
+              //   callback: nextEvent,
+              // ),
               /* ChannelsActionBar */
               ChannelsActionBar(openChannelCallBack: openChannel),
               channels.isEmpty
