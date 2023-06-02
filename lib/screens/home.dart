@@ -33,12 +33,21 @@ class _HomeState extends State<Home> {
     const esploraUrl = "http://0.0.0.0:3002";
     final config = ldk.Config(
         storageDirPath: alicePath,
-        esploraServerUrl: esploraUrl,
-        network: ldk.Network.Regtest,
-        listeningAddress: const ldk.SocketAddr(ip: '0.0.0.0', port: 7004),
+        network: ldk.Network.regtest,
+        listeningAddress:
+            const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5004),
+        onchainWalletSyncIntervalSecs: 30,
+        walletSyncIntervalSecs: 30,
+        feeRateCacheUpdateIntervalSecs: 100,
+        logLevel: ldk.LogLevel.info,
         defaultCltvExpiryDelta: 144);
-    ldk.Builder aliceBuilder = ldk.Builder.fromConfig(config: config);
-    aliceNode = await aliceBuilder.build();
+    aliceNode = await ldk.Builder.fromConfig(config: config)
+        .setEntropyBip39Mnemonic(
+            mnemonic: const ldk.Mnemonic(
+                internal:
+                    'usual borrow equal obtain lazy grace jungle hungry shuffle type gasp install'))
+        .setEsploraServer(esploraServerUrl: esploraUrl)
+        .build();
   }
 
   startNode() async {
@@ -47,7 +56,7 @@ class _HomeState extends State<Home> {
 
     setState(() {
       aliceNodeId = res;
-      displayText = "${aliceNodeId?.keyHex}.started successfully";
+      displayText = "${aliceNodeId?.internal}.started successfully";
     });
   }
 
@@ -69,13 +78,13 @@ class _HomeState extends State<Home> {
     await getNodeBalance();
     await getChannels();
     setState(() {
-      displayText = "${aliceNodeId!.keyHex} Sync Completed";
+      displayText = "${aliceNodeId!.internal} Sync Completed";
     });
   }
 
   getListeningAddress() async {
     final alice = await aliceNode!.listeningAddress();
-    final id = "${aliceNodeId!.keyHex}@${alice?.ip}:${alice!.port}";
+    final id = "${aliceNodeId!.internal}@${alice?.addr}:${alice!.port}";
     setState(() {
       displayText = "alice's node pubKey & Address : $id";
     });
@@ -105,8 +114,8 @@ class _HomeState extends State<Home> {
     await aliceNode!.connectOpenChannel(
         channelAmountSats: amount,
         announceChannel: true,
-        address: ldk.SocketAddr(ip: host, port: port),
-        nodeId: ldk.PublicKey(keyHex: nodeId));
+        address: ldk.NetAddress.iPv4(addr: host, port: port),
+        nodeId: ldk.PublicKey(internal: nodeId));
 
     if (kDebugMode) {
       print("temporary channel opened");
@@ -124,10 +133,10 @@ class _HomeState extends State<Home> {
   getNewAddress() async {
     final address = await aliceNode!.newFundingAddress();
     if (kDebugMode) {
-      print(address.addressHex.toString());
+      print(address.internal.toString());
     }
     setState(() {
-      displayText = "${address.addressHex}";
+      displayText = address.internal;
     });
   }
 
@@ -136,26 +145,26 @@ class _HomeState extends State<Home> {
         .receivePayment(amountMsat: amount, description: '', expirySecs: 10000);
     setState(() {
       if (kDebugMode) {
-        print(invoice.hex.toString());
+        print(invoice.internal.toString());
       }
-      displayText = "Receive payment invoice${invoice.hex.toString()}";
+      displayText = "Receive payment invoice${invoice.internal.toString()}";
     });
     return invoice.toString();
   }
 
   Future<void> sendPayment(String invoice) async {
     final paymentHash =
-        await aliceNode!.sendPayment(invoice: ldk.Invoice(hex: invoice));
+        await aliceNode!.sendPayment(invoice: ldk.Invoice(internal: invoice));
     final res = await aliceNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
     });
   }
 
-  Future<void> closeChannel(ldk.U8Array32 channelId, String nodeId) async {
+  Future<void> closeChannel(ldk.ChannelId channelId, String nodeId) async {
     await aliceNode!.closeChannel(
       channelId: channelId,
-      counterpartyNodeId: ldk.PublicKey(keyHex: nodeId),
+      counterpartyNodeId: ldk.PublicKey(internal: nodeId),
     );
   }
 
@@ -180,7 +189,7 @@ class _HomeState extends State<Home> {
                 balance: aliceBalance,
                 nodeId: aliceNodeId == null
                     ? 'Not Initialized'
-                    : aliceNodeId!.keyHex,
+                    : aliceNodeId!.internal,
               ),
               const SizedBox(height: 20),
               // /* GetAddressButton */

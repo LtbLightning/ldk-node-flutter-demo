@@ -351,7 +351,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
 
 class ChannelListWidget extends StatefulWidget {
   final List<ldk.ChannelDetails> channels;
-  final Future<void> Function(ldk.U8Array32 channelId, String nodeId)
+  final Future<void> Function(ldk.ChannelId channelId, String nodeId)
       closeChannelCallBack;
   final Future<String> Function(int amount) receivePaymentCallBack;
   final Future<void> Function(String invoice) sendPaymentCallBack;
@@ -405,7 +405,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
               ],
             ),
             title: Text(
-              widget.channels[index].channelId
+              widget.channels[index].channelId.internal
                   .map((e) => e.toRadixString(16))
                   .toList()
                   .join()

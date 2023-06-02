@@ -5,18 +5,18 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: a36ec4843dc30ea6bf652bf25e3448db6c5e8bcf4aa55f063a5d1dad216d8214
+      sha256: ae92f5d747aee634b87f89d9946000c2de774be1d6ac3e58268224348cd0101a
       url: "https://pub.dev"
     source: hosted
-    version: "58.0.0"
+    version: "61.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
-      sha256: cc4242565347e98424ce9945c819c192ec0838cb9d1f6aa4a97cc96becbc5b27
+      sha256: ea3d8652bda62982addfd92fdc2d0214e5f82e43325104990d4f4c4a2a313562
       url: "https://pub.dev"
     source: hosted
-    version: "5.10.0"
+    version: "5.13.0"
   archive:
     dependency: transitive
     description:
@@ -186,10 +186,10 @@ packages:
     dependency: transitive
     description:
       name: flutter_rust_bridge
-      sha256: "83d4b4d2847e438eb647437c14d780f293dc2407f04854b227c18af2e6426eab"
+      sha256: c039cb7b21d11665591557c1bf1d558f8db549a260cc69d455f30443a883f95c
       url: "https://pub.dev"
     source: hosted
-    version: "1.75.1"
+    version: "1.77.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -199,10 +199,10 @@ packages:
     dependency: transitive
     description:
       name: freezed
-      sha256: e819441678f1679b719008ff2ff0ef045d66eed9f9ec81166ca0d9b02a187454
+      sha256: a9520490532087cf38bf3f7de478ab6ebeb5f68bb1eb2641546d92719b224445
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.2"
+    version: "2.3.5"
   freezed_annotation:
     dependency: transitive
     description:
@@ -254,11 +254,12 @@ packages:
   ldk_node:
     dependency: "direct main"
     description:
-      name: ldk_node
-      sha256: eab7c7a0ea697ca17b4d1ca270ccf27b81eacb7f2a6ea1305e9698454789057a
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.0"
+      path: "."
+      ref: "0.1.1-alpha"
+      resolved-ref: "415021939f4e33722e022ad9767e0c066f83f55b"
+      url: "https://github.com/LtbLightning/ldk_node_flutter"
+    source: git
+    version: "0.1.1-alpha"
   lints:
     dependency: transitive
     description:
@@ -601,5 +602,5 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=3.0.0-0 <4.0.0"
+  dart: ">=3.0.0 <4.0.0"
   flutter: ">=3.3.0"
