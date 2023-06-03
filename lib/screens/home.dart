@@ -14,48 +14,38 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   ldk.Node? aliceNode;
   ldk.PublicKey? aliceNodeId;
-  int aliceBalance = 0;
+  bool isInitialized = false;
+  static const NODE_DIR = "LDK_CACHE/ALICE'S_NODE";
   String displayText = "";
-  String address = "";
+  int aliceBalance = 0;
   List<ldk.ChannelDetails> channels = [];
-  static const NODE_DIR = "LDK_CACHE/DAVE'S_NODE";
 
   @override
   void initState() {
-    initAliceNode();
     super.initState();
   }
 
-  initAliceNode() async {
+  initAliceNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final alicePath = "${directory.path}/$NODE_DIR";
-    // const esploraUrl = "http://10.0.0.116:3002";
     const esploraUrl = "http://0.0.0.0:3002";
-    final config = ldk.Config(
-        storageDirPath: alicePath,
-        network: ldk.Network.regtest,
-        listeningAddress:
-            const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5004),
-        onchainWalletSyncIntervalSecs: 30,
-        walletSyncIntervalSecs: 30,
-        feeRateCacheUpdateIntervalSecs: 100,
-        logLevel: ldk.LogLevel.info,
-        defaultCltvExpiryDelta: 144);
-    aliceNode = await ldk.Builder.fromConfig(config: config)
-        .setEntropyBip39Mnemonic(
-            mnemonic: const ldk.Mnemonic(
-                internal:
-                    'usual borrow equal obtain lazy grace jungle hungry shuffle type gasp install'))
-        .setEsploraServer(esploraServerUrl: esploraUrl)
-        .build();
+    final builder = ldk.Builder()
+        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
+        .setStorageDirPath(alicePath)
+        .setListeningAddress(
+            const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5005))
+        .setNetwork(ldk.Network.regtest)
+        .setEsploraServer(esploraServerUrl: esploraUrl);
+    aliceNode = await builder.build();
+    setState(() {
+      isInitialized = true;
+    });
   }
 
   startNode() async {
     final _ = await aliceNode!.start();
-    final res = await aliceNode!.nodeId();
-
+    aliceNodeId = await aliceNode!.nodeId();
     setState(() {
-      aliceNodeId = res;
       displayText = "${aliceNodeId?.internal}.started successfully";
     });
   }
@@ -72,24 +62,47 @@ class _HomeState extends State<Home> {
   }
 
   syncAliceNode() async {
-    print("syncing");
     await aliceNode!.syncWallets();
-    print("syncing complete");
-    await getNodeBalance();
+    final alice = await aliceNode!.onChainBalance();
     await getChannels();
+    setState(() {
+      aliceBalance = alice.confirmed;
+    });
+    if (kDebugMode) {
+      print("alice's_balance: $aliceBalance");
+    }
     setState(() {
       displayText = "${aliceNodeId!.internal} Sync Completed";
     });
   }
 
+  getNewAddress() async {
+    final aliceAddress = await aliceNode!.newFundingAddress();
+    if (kDebugMode) {
+      print("Alice's address: ${aliceAddress.internal}");
+    }
+    setState(() {
+      displayText = aliceAddress.internal;
+    });
+  }
+
   getListeningAddress() async {
     final alice = await aliceNode!.listeningAddress();
-    final id = "${aliceNodeId!.internal}@${alice?.addr}:${alice!.port}";
     setState(() {
-      displayText = "alice's node pubKey & Address : $id";
+      displayText =
+          "alice's node \n host addr: ${alice!.addr} \n port: ${alice.port} ";
     });
+  }
+
+  Future<void> openChannel(
+      String host, int port, String nodeId, int amount) async {
+    await aliceNode!.connectOpenChannel(
+        channelAmountSats: amount,
+        announceChannel: true,
+        address: ldk.NetAddress.iPv4(addr: host, port: port),
+        nodeId: ldk.PublicKey(internal: nodeId));
     if (kDebugMode) {
-      print("alice's listeningAddress : $id");
+      print("temporary channel opened");
     }
   }
 
@@ -107,37 +120,6 @@ class _HomeState extends State<Home> {
         print("localBalanceMsat: ${e.outboundCapacityMsat}");
       }
     }
-  }
-
-  Future<void> openChannel(
-      String host, int port, String nodeId, int amount) async {
-    await aliceNode!.connectOpenChannel(
-        channelAmountSats: amount,
-        announceChannel: true,
-        address: ldk.NetAddress.iPv4(addr: host, port: port),
-        nodeId: ldk.PublicKey(internal: nodeId));
-
-    if (kDebugMode) {
-      print("temporary channel opened");
-    }
-  }
-
-  nextEvent() async {
-    final res = await aliceNode!.nextEvent();
-    if (kDebugMode) {
-      print(res.toString());
-    }
-    await aliceNode!.eventHandled();
-  }
-
-  getNewAddress() async {
-    final address = await aliceNode!.newFundingAddress();
-    if (kDebugMode) {
-      print(address.internal.toString());
-    }
-    setState(() {
-      displayText = address.internal;
-    });
   }
 
   Future<String> receivePayment(int amount) async {
@@ -178,54 +160,57 @@ class _HomeState extends State<Home> {
       appBar: buildAppBar(context, startNode, syncAliceNode),
       body: SingleChildScrollView(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: Column(
-            children: [
-              ResponseContainer(
-                text: displayText ?? '',
-              ),
-              // /* Balance */
-              BalanceWidget(
-                balance: aliceBalance,
-                nodeId: aliceNodeId == null
-                    ? 'Not Initialized'
-                    : aliceNodeId!.internal,
-              ),
-              const SizedBox(height: 20),
-              // /* GetAddressButton */
-              SubmitButton(
-                text: 'Get New Address',
-                callback: getNewAddress,
-              ),
-              /* Get Listening Address Button */
-              SubmitButton(
-                text: 'Get Listening Address',
-                callback: getListeningAddress,
-              ),
-              // SubmitButton(
-              //   text: 'Next Event',
-              //   callback: nextEvent,
-              // ),
-              /* ChannelsActionBar */
-              ChannelsActionBar(openChannelCallBack: openChannel),
-              channels.isEmpty
-                  ? const Text(
-                      'No Open Channels',
-                      overflow: TextOverflow.clip,
-                      textAlign: TextAlign.start,
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500),
-                    )
-                  : ChannelListWidget(
-                      channels: channels,
-                      closeChannelCallBack: closeChannel,
-                      receivePaymentCallBack: receivePayment,
-                      sendPaymentCallBack: sendPayment,
-                    )
-            ],
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          child: !isInitialized
+              ? MnemonicWidget(
+                  buildCallBack: (String e) async {
+                    await initAliceNode(e);
+                  },
+                )
+              : Column(
+                  children: [
+                    ResponseContainer(
+                      text: displayText ?? '',
+                    ),
+                    // /* Balance */
+                    BalanceWidget(
+                      balance: aliceBalance,
+                      nodeId: aliceNodeId == null
+                          ? 'Not Initialized'
+                          : aliceNodeId!.internal,
+                    ),
+                    const SizedBox(height: 20),
+                    // /* GetAddressButton */
+                    SubmitButton(
+                      text: 'Get New Address',
+                      callback: getNewAddress,
+                    ),
+                    /* Get Listening Address Button */
+                    SubmitButton(
+                      text: 'Get Listening Address',
+                      callback: getListeningAddress,
+                    ),
+
+                    /* ChannelsActionBar */
+                    ChannelsActionBar(openChannelCallBack: openChannel),
+                    channels.isEmpty
+                        ? const Text(
+                            'No Open Channels',
+                            overflow: TextOverflow.clip,
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500),
+                          )
+                        : ChannelListWidget(
+                            channels: channels,
+                            closeChannelCallBack: closeChannel,
+                            receivePaymentCallBack: receivePayment,
+                            sendPaymentCallBack: sendPayment,
+                          )
+                  ],
+                ),
         ),
       ),
     );
