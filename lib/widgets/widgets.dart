@@ -107,7 +107,7 @@ class ResponseContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
         margin: const EdgeInsets.only(bottom: 5),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         width: double.infinity,
         child: StyledContainer(
           child: SelectableText.rich(
@@ -196,64 +196,6 @@ class BalanceWidget extends StatelessWidget {
   }
 }
 
-class MnemonicWidget extends StatefulWidget {
-  final Function(String e) buildCallBack;
-  const MnemonicWidget({Key? key, required this.buildCallBack})
-      : super(key: key);
-
-  @override
-  State<MnemonicWidget> createState() => _MnemonicWidgetState();
-}
-
-class _MnemonicWidgetState extends State<MnemonicWidget> {
-  String? aliceMnemonic;
-  @override
-  Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
-    return Column(
-      children: [
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              TextFormField(
-                maxLines: 8,
-                showCursor: true,
-                autofocus: true,
-                style: TextStyle(
-                    color: Colors.black.withOpacity(.8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(labelText: 'Mnemonic'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a valid mnemonic';
-                  }
-                  setState(() {
-                    aliceMnemonic = value;
-                  });
-                  return null;
-                },
-              ),
-              const SizedBox(height: 10),
-              SubmitButton(
-                text: 'Build Node',
-                callback: () async {
-                  if (_formKey.currentState!.validate() &&
-                      aliceMnemonic != null) {
-                    await widget.buildCallBack(aliceMnemonic!);
-                  }
-                },
-              )
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class ChannelsActionBar extends StatefulWidget {
   final Future<void> Function(String host, int port, String nodeId, int amount)
       openChannelCallBack;
@@ -312,7 +254,6 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                             setState(() {
                               nodeId = value;
                             });
-                            return null;
                           },
                         ),
                         const SizedBox(height: 10),
@@ -335,7 +276,6 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                                   setState(() {
                                     address = value;
                                   });
-                                  return null;
                                 },
                               ),
                             ),
@@ -358,7 +298,6 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                                   setState(() {
                                     port = int.parse(value.trim());
                                   });
-                                  return null;
                                 },
                               ),
                             )
@@ -380,7 +319,6 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                             setState(() {
                               amount = int.parse(value.trim());
                             });
-                            return null;
                           },
                         ),
                         const SizedBox(height: 30),
@@ -542,7 +480,6 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                                   setState(() {
                                     amount = int.parse(value);
                                   });
-                                  return null;
                                 },
                               ),
                               const SizedBox(
@@ -590,7 +527,6 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                                   setState(() {
                                     invoice = value;
                                   });
-                                  return null;
                                 },
                               ),
                               const SizedBox(
@@ -638,7 +574,6 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                                   setState(() {
                                     address = value;
                                   });
-                                  return null;
                                 },
                               ),
                               const SizedBox(
