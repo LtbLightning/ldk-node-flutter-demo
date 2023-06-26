@@ -63,28 +63,12 @@ popUpWidget(
       });
 }
 
-AppBar buildAppBar(
-    BuildContext context, void Function() startNode, void Function() syncNode) {
+AppBar buildAppBar(BuildContext context) {
   return AppBar(
     leadingWidth: 100,
     backgroundColor: Colors.white,
     elevation: 0,
-    actions: [
-      IconButton(
-          onPressed: startNode,
-          icon: Icon(
-            CupertinoIcons.power,
-            size: 20,
-            color: Theme.of(context).secondaryHeaderColor,
-          )),
-      IconButton(
-          onPressed: syncNode,
-          icon: Icon(
-            CupertinoIcons.refresh,
-            size: 20,
-            color: Theme.of(context).secondaryHeaderColor,
-          ))
-    ],
+    actions: [],
     leading: Icon(
       CupertinoIcons.bolt_circle,
       color: Theme.of(context).secondaryHeaderColor,
