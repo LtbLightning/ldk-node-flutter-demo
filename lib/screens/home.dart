@@ -14,8 +14,9 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   ldk.Node? aliceNode;
   ldk.PublicKey? aliceNodeId;
-  bool isInitialized = false;
-  static const NODE_DIR = "LDK_CACHE/BOB'S_NODE";
+  bool built = false;
+  bool started = false;
+  static const NODE_DIR = "LDK_CACHE/ALICE'S_NODE";
   String displayText = "";
   int aliceBalance = 0;
   List<ldk.ChannelDetails> channels = [];
@@ -28,17 +29,17 @@ class _HomeState extends State<Home> {
   buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final alicePath = "${directory.path}/$NODE_DIR";
-    const esploraUrl = "http://0.0.0.0:3002";
+    const esploraUrl = "https://blockstream.info/testnet/api";
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
             const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5005))
-        .setNetwork(ldk.Network.regtest)
+        .setNetwork(ldk.Network.testnet)
         .setStorageDirPath(alicePath)
         .setEsploraServer(esploraServerUrl: esploraUrl);
     aliceNode = await builder.build();
     setState(() {
-      isInitialized = true;
+      built = true;
     });
   }
 
@@ -46,6 +47,7 @@ class _HomeState extends State<Home> {
     final _ = await aliceNode!.start();
     aliceNodeId = await aliceNode!.nodeId();
     setState(() {
+      started = true;
       displayText = "${aliceNodeId?.internal}.started successfully";
     });
   }
@@ -146,7 +148,7 @@ class _HomeState extends State<Home> {
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-          child: !isInitialized
+          child: !built
               ? MnemonicWidget(
                   buildCallBack: (String e) async {
                     await buildNode(e);
@@ -159,7 +161,7 @@ class _HomeState extends State<Home> {
                     ),
 
                     /* Start */
-                    !isInitialized
+                    !started
                         ? SubmitButton(
                             text: 'Start',
                             callback: start,
