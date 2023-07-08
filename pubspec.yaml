@@ -12,8 +12,8 @@ dependencies:
   path_provider: ^2.0.12
   ldk_node:
     git:
-      url: https://github.com/LtbLightning/ldk_node_flutter
-      ref: v0.1.2
+      url: https://github.com/LtbLightning/ldk-node-flutter/
+      ref: main
 dev_dependencies:
   flutter_test:
     sdk: flutter

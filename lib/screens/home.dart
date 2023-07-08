@@ -53,17 +53,17 @@ class _HomeState extends State<Home> {
   }
 
   onChainBalance() async {
-    final alice = await aliceNode!.onChainBalance();
+    final alice = await aliceNode!.totalOnchainBalanceSats();
     if (kDebugMode) {
-      print("alice's_balance: ${alice.confirmed}");
+      print("alice's_balance: ${alice}");
     }
     setState(() {
-      aliceBalance = alice.confirmed;
+      aliceBalance = alice;
     });
   }
 
   newFundingAddress() async {
-    final aliceAddress = await aliceNode!.newFundingAddress();
+    final aliceAddress = await aliceNode!.newOnchainAddress();
     if (kDebugMode) {
       print("Alice's address: ${aliceAddress.internal}");
     }
