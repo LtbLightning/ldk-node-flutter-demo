@@ -14,7 +14,8 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   ldk.Node? aliceNode;
   ldk.PublicKey? aliceNodeId;
-  bool isInitialized = false;
+  bool built = false;
+  bool started = false;
   static const NODE_DIR = "LDK_CACHE/ALICE'S_NODE";
   String displayText = "";
   int aliceBalance = 0;
@@ -25,34 +26,34 @@ class _HomeState extends State<Home> {
     super.initState();
   }
 
-  initAliceNode(String mnemonic) async {
+  buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final alicePath = "${directory.path}/$NODE_DIR";
-    const esploraUrl = "http://0.0.0.0:3002";
+    const esploraUrl = "https://blockstream.info/testnet/api";
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
-        .setStorageDirPath(alicePath)
         .setListeningAddress(
             const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5005))
-        .setNetwork(ldk.Network.regtest)
+        .setNetwork(ldk.Network.testnet)
+        .setStorageDirPath(alicePath)
         .setEsploraServer(esploraServerUrl: esploraUrl);
     aliceNode = await builder.build();
     setState(() {
-      isInitialized = true;
+      built = true;
     });
   }
 
-  startNode() async {
+  start() async {
     final _ = await aliceNode!.start();
     aliceNodeId = await aliceNode!.nodeId();
     setState(() {
+      started = true;
       displayText = "${aliceNodeId?.internal}.started successfully";
     });
   }
 
-  getNodeBalance() async {
+  onChainBalance() async {
     final alice = await aliceNode!.onChainBalance();
-
     if (kDebugMode) {
       print("alice's_balance: ${alice.confirmed}");
     }
@@ -61,22 +62,7 @@ class _HomeState extends State<Home> {
     });
   }
 
-  syncAliceNode() async {
-    await aliceNode!.syncWallets();
-    final alice = await aliceNode!.onChainBalance();
-    await getChannels();
-    setState(() {
-      aliceBalance = alice.confirmed;
-    });
-    if (kDebugMode) {
-      print("alice's_balance: $aliceBalance");
-    }
-    setState(() {
-      displayText = "${aliceNodeId!.internal} Sync Completed";
-    });
-  }
-
-  getNewAddress() async {
+  newFundingAddress() async {
     final aliceAddress = await aliceNode!.newFundingAddress();
     if (kDebugMode) {
       print("Alice's address: ${aliceAddress.internal}");
@@ -86,7 +72,7 @@ class _HomeState extends State<Home> {
     });
   }
 
-  getListeningAddress() async {
+  listeningAddress() async {
     final alice = await aliceNode!.listeningAddress();
     setState(() {
       displayText =
@@ -94,11 +80,12 @@ class _HomeState extends State<Home> {
     });
   }
 
-  Future<void> openChannel(
-      String host, int port, String nodeId, int amount) async {
+  Future<void> connectOpenChannel(String host, int port, String nodeId,
+      int amount, int pushToCounterpartyMsat) async {
     await aliceNode!.connectOpenChannel(
         channelAmountSats: amount,
         announceChannel: true,
+        pushToCounterpartyMsat: pushToCounterpartyMsat,
         address: ldk.NetAddress.iPv4(addr: host, port: port),
         nodeId: ldk.PublicKey(internal: nodeId));
     if (kDebugMode) {
@@ -106,7 +93,7 @@ class _HomeState extends State<Home> {
     }
   }
 
-  getChannels() async {
+  listChannels() async {
     final res = await aliceNode!.listChannels();
     setState(() {
       channels = res;
@@ -157,14 +144,14 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBar(context, startNode, syncAliceNode),
+      appBar: buildAppBar(context),
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-          child: !isInitialized
+          child: !built
               ? MnemonicWidget(
                   buildCallBack: (String e) async {
-                    await initAliceNode(e);
+                    await buildNode(e);
                   },
                 )
               : Column(
@@ -172,7 +159,15 @@ class _HomeState extends State<Home> {
                     ResponseContainer(
                       text: displayText ?? '',
                     ),
-                    // /* Balance */
+
+                    /* Start */
+                    !started
+                        ? SubmitButton(
+                            text: 'Start',
+                            callback: start,
+                          )
+                        : const SizedBox(),
+                    /* Balance */
                     BalanceWidget(
                       balance: aliceBalance,
                       nodeId: aliceNodeId == null
@@ -180,19 +175,26 @@ class _HomeState extends State<Home> {
                           : aliceNodeId!.internal,
                     ),
                     const SizedBox(height: 20),
-                    // /* GetAddressButton */
                     SubmitButton(
-                      text: 'Get New Address',
-                      callback: getNewAddress,
+                      text: 'On Chain Balance',
+                      callback: onChainBalance,
                     ),
-                    /* Get Listening Address Button */
+                    /* New Funding Address */
                     SubmitButton(
-                      text: 'Get Listening Address',
-                      callback: getListeningAddress,
+                      text: 'New Funding Address',
+                      callback: newFundingAddress,
                     ),
-
+                    /* Listening Address */
+                    SubmitButton(
+                      text: 'Listening Address',
+                      callback: listeningAddress,
+                    ),
+                    SubmitButton(
+                      text: 'List Channels',
+                      callback: listChannels,
+                    ),
                     /* ChannelsActionBar */
-                    ChannelsActionBar(openChannelCallBack: openChannel),
+                    ChannelsActionBar(openChannelCallBack: connectOpenChannel),
                     channels.isEmpty
                         ? const Text(
                             'No Open Channels',

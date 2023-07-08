@@ -63,28 +63,12 @@ popUpWidget(
       });
 }
 
-AppBar buildAppBar(
-    BuildContext context, void Function() startNode, void Function() syncNode) {
+AppBar buildAppBar(BuildContext context) {
   return AppBar(
     leadingWidth: 100,
     backgroundColor: Colors.white,
     elevation: 0,
-    actions: [
-      IconButton(
-          onPressed: startNode,
-          icon: Icon(
-            CupertinoIcons.power,
-            size: 20,
-            color: Theme.of(context).secondaryHeaderColor,
-          )),
-      IconButton(
-          onPressed: syncNode,
-          icon: Icon(
-            CupertinoIcons.refresh,
-            size: 20,
-            color: Theme.of(context).secondaryHeaderColor,
-          ))
-    ],
+    actions: [],
     leading: Icon(
       CupertinoIcons.bolt_circle,
       color: Theme.of(context).secondaryHeaderColor,
@@ -255,8 +239,8 @@ class _MnemonicWidgetState extends State<MnemonicWidget> {
 }
 
 class ChannelsActionBar extends StatefulWidget {
-  final Future<void> Function(String host, int port, String nodeId, int amount)
-      openChannelCallBack;
+  final Future<void> Function(String host, int port, String nodeId, int amount,
+      int pushToCounterpartyMsat) openChannelCallBack;
   const ChannelsActionBar({Key? key, required this.openChannelCallBack})
       : super(key: key);
 
@@ -270,6 +254,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
   int port = 0;
   String nodeId = "";
   int amount = 0;
+  int counterPartyAmount = 0;
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -290,7 +275,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                 context: context,
                 title: 'Open channel',
                 widget: SizedBox(
-                  height: 290,
+                  height: 380,
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -307,7 +292,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                               const InputDecoration(labelText: 'Node Id'),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter the nodePubKeyAndAddress ';
+                              return 'Please enter the nodeId ';
                             }
                             setState(() {
                               nodeId = value;
@@ -383,13 +368,32 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                             return null;
                           },
                         ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          keyboardType: TextInputType.number,
+                          style: TextStyle(
+                              color: Colors.black.withOpacity(.8),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700),
+                          decoration: const InputDecoration(
+                              labelText: 'CounterPartyAmount'),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter the counterPartyAmount';
+                            }
+                            setState(() {
+                              counterPartyAmount = int.parse(value.trim());
+                            });
+                            return null;
+                          },
+                        ),
                         const SizedBox(height: 30),
                         SubmitButton(
                           text: 'Submit',
                           callback: () async {
                             if (_formKey.currentState!.validate()) {
-                              await widget.openChannelCallBack(
-                                  address, port, nodeId, amount);
+                              await widget.openChannelCallBack(address, port,
+                                  nodeId, amount, counterPartyAmount);
                               if (context.mounted) {
                                 Navigator.of(context).pop();
                               }
