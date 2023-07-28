@@ -29,14 +29,16 @@ class _HomeState extends State<Home> {
   buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final alicePath = "${directory.path}/$NODE_DIR";
-    const esploraUrl = "https://blockstream.info/testnet/api";
+    const localEsploraUrl = "http://0.0.0.0:3004";
+    const esploraBlockStreamUrl = 'https://blockstream.info/testnet/api';
+    print(alicePath);
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
             const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5005))
         .setNetwork(ldk.Network.testnet)
         .setStorageDirPath(alicePath)
-        .setEsploraServer(esploraServerUrl: esploraUrl);
+        .setEsploraServer(esploraServerUrl: esploraBlockStreamUrl);
     aliceNode = await builder.build();
     setState(() {
       built = true;
@@ -53,13 +55,12 @@ class _HomeState extends State<Home> {
   }
 
   onChainBalance() async {
-    final alice = await aliceNode!.totalOnchainBalanceSats();
+    await aliceNode!.syncWallets();
+    aliceBalance = await aliceNode!.totalOnchainBalanceSats();
+
     if (kDebugMode) {
-      print("alice's_balance: ${alice}");
+      print("alice's_balance: $aliceBalance");
     }
-    setState(() {
-      aliceBalance = alice;
-    });
   }
 
   newFundingAddress() async {
@@ -157,7 +158,7 @@ class _HomeState extends State<Home> {
               : Column(
                   children: [
                     ResponseContainer(
-                      text: displayText ?? '',
+                      text: displayText,
                     ),
 
                     /* Start */
