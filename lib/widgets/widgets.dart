@@ -68,17 +68,24 @@ AppBar buildAppBar(BuildContext context) {
     leadingWidth: 100,
     backgroundColor: Colors.white,
     elevation: 0,
-    actions: [],
-    leading: Icon(
-      CupertinoIcons.bolt_circle,
-      color: Theme.of(context).secondaryHeaderColor,
-      size: 30,
+    actions: [
+      Padding(
+        padding: EdgeInsets.all(5),
+        child: Image.asset(
+          'assets/logo.png',
+          fit: BoxFit.contain,
+        ),
+      )
+    ],
+    leading: Image.asset(
+      'assets/flutter-logo.png',
+      fit: BoxFit.contain,
     ),
-    title: Text("Ldk Node Flutter Quickstart",
+    title: Text("Ldk Node Flutter Demo",
         style: Theme.of(context)
             .textTheme
             .displaySmall!
-            .copyWith(fontWeight: FontWeight.w800)),
+            .copyWith(fontWeight: FontWeight.w800, fontSize: 15)),
   );
 }
 

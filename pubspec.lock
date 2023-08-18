@@ -256,8 +256,8 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: cd2a8126985b45e92715bed0a56e6c4c0c6f12d7
-      url: "https://github.com/LtbLightning/ldk-node-flutter"
+      resolved-ref: "5061c9e754247fbf1e132621f22990fd0c452b89"
+      url: "https://github.com/LtbLightning/ldk-node-flutter/"
     source: git
     version: "0.1.2"
   lints:

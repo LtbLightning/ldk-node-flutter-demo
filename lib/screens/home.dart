@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk;
@@ -16,7 +18,7 @@ class _HomeState extends State<Home> {
   ldk.PublicKey? aliceNodeId;
   bool built = false;
   bool started = false;
-  static const NODE_DIR = "LDK_CACHE/ALICE'S_NODE";
+  static const NODE_DIR = "node";
   String displayText = "";
   int aliceBalance = 0;
   List<ldk.ChannelDetails> channels = [];
@@ -29,16 +31,15 @@ class _HomeState extends State<Home> {
   buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final alicePath = "${directory.path}/$NODE_DIR";
-    const localEsploraUrl = "http://0.0.0.0:3004";
-    const esploraBlockStreamUrl = 'https://blockstream.info/testnet/api';
+    const localEsploraUrl = "http://127.0.0.1:30000";
     print(alicePath);
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
-            const ldk.NetAddress.iPv4(addr: '0.0.0.0', port: 5005))
-        .setNetwork(ldk.Network.testnet)
+            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 5001))
+        .setNetwork(ldk.Network.regtest)
         .setStorageDirPath(alicePath)
-        .setEsploraServer(esploraServerUrl: esploraBlockStreamUrl);
+        .setEsploraServer(esploraServerUrl: localEsploraUrl);
     aliceNode = await builder.build();
     setState(() {
       built = true;
@@ -46,12 +47,17 @@ class _HomeState extends State<Home> {
   }
 
   start() async {
-    final _ = await aliceNode!.start();
-    aliceNodeId = await aliceNode!.nodeId();
-    setState(() {
-      started = true;
-      displayText = "${aliceNodeId?.internal}.started successfully";
-    });
+    try {
+      final _ = await aliceNode!.start();
+      aliceNodeId = await aliceNode!.nodeId();
+      setState(() {
+        started = true;
+        displayText = "${aliceNodeId?.internal}.started successfully";
+      });
+    } on Exception catch (e) {
+      print("Error in starting Node");
+      print(e);
+    }
   }
 
   onChainBalance() async {
@@ -102,6 +108,7 @@ class _HomeState extends State<Home> {
     if (kDebugMode) {
       print("======Channels========");
       for (var e in res) {
+        inspect(e);
         print("isChannelReady: ${e.isChannelReady}");
         print("isUsable: ${e.isUsable}");
         print("confirmation: ${e.confirmations}");
