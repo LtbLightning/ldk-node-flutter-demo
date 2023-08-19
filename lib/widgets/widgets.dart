@@ -1,6 +1,9 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, use_build_context_synchronously
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk;
+import 'package:ldk_node_flutter_quickstart/styles/theme.dart';
 
 class SubmitButton extends StatelessWidget {
   final String text;
@@ -11,30 +14,51 @@ class SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: callback,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 5),
-        decoration: BoxDecoration(
-            color: Theme.of(context).secondaryHeaderColor,
-            borderRadius: BorderRadius.circular(15)),
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-        width: double.infinity,
-        child: Center(
-          child: Text(text,
-              style: Theme.of(context)
-                  .textTheme
-                  .displaySmall!
-                  .copyWith(fontSize: 14, color: Colors.white)),
-        ),
+    return ElevatedButton(
+      onPressed: callback,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.blue,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
       ),
+      child: Center(
+        child: Text(text),
+      ),
+    );
+  }
+}
+
+class SmallButton extends StatelessWidget {
+  final String text;
+  final bool disabled;
+  final VoidCallback callback;
+
+  const SmallButton({
+    Key? key,
+    required this.text,
+    required this.callback,
+    this.disabled = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: !disabled ? callback : null,
+      style: TextButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: disabled ? Colors.grey : Colors.black,
+        side: BorderSide(width: 1.0, color: AppColors.blue),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
+        minimumSize: Size.zero,
+      ),
+      child: Center(child: Text(text)),
     );
   }
 }
 
 popUpWidget(
     {required String title,
-    required SizedBox widget,
+    required Widget widget,
     required BuildContext context}) {
   showDialog(
       context: context,
@@ -63,29 +87,39 @@ popUpWidget(
       });
 }
 
-AppBar buildAppBar(BuildContext context) {
-  return AppBar(
-    leadingWidth: 100,
-    backgroundColor: Colors.white,
-    elevation: 0,
-    actions: [
-      Padding(
-        padding: EdgeInsets.all(5),
-        child: Image.asset(
-          'assets/logo.png',
-          fit: BoxFit.contain,
-        ),
-      )
-    ],
-    leading: Image.asset(
-      'assets/flutter-logo.png',
-      fit: BoxFit.contain,
+PreferredSize buildAppBar(BuildContext context) {
+  return PreferredSize(
+    preferredSize: Size.fromHeight(40), // Set this height
+    child: Container(
+      padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top, left: 30, right: 30),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: AppColors.blue, width: 1),
+              ),
+              child: Container(
+                padding: EdgeInsets.all(5),
+                child: Image.asset("assets/flutter-logo.png",
+                    width: 30, height: 30),
+              )),
+          Spacer(),
+          Text(
+            'Demo App \n Ldk Node Flutter',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          Spacer(),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(25.0),
+            child: Image.asset("assets/logo.png"),
+          ),
+        ],
+      ),
     ),
-    title: Text("Ldk Node Flutter Demo",
-        style: Theme.of(context)
-            .textTheme
-            .displaySmall!
-            .copyWith(fontWeight: FontWeight.w800, fontSize: 15)),
   );
 }
 
@@ -132,7 +166,7 @@ class StyledContainer extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 5),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
       decoration: BoxDecoration(
-          color: Colors.indigoAccent.withOpacity(.25),
+          color: AppColors.blue.withOpacity(.25),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             width: 2,
@@ -146,20 +180,27 @@ class StyledContainer extends StatelessWidget {
 class BalanceWidget extends StatelessWidget {
   final int balance;
   final String nodeId;
-  const BalanceWidget({Key? key, required this.balance, required this.nodeId})
+  final String listeningAddress;
+  final String fundingAddress;
+  const BalanceWidget(
+      {Key? key,
+      required this.balance,
+      required this.nodeId,
+      required this.listeningAddress,
+      required this.fundingAddress})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
         width: double.infinity,
-        height: 180,
+        height: 150,
         decoration: BoxDecoration(
-            color: Colors.indigoAccent.withOpacity(.25),
+            color: AppColors.blue.withOpacity(.25),
             border: Border.all(
-              width: 2,
-              color: Theme.of(context).secondaryHeaderColor,
+              width: 4,
+              color: AppColors.blue,
             ),
             borderRadius: BorderRadius.circular(20)),
         child: Column(
@@ -167,23 +208,43 @@ class BalanceWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("${balance / 100000000} BTC",
-                maxLines: 3,
-                textAlign: TextAlign.start,
                 style: Theme.of(context).textTheme.displayLarge!.copyWith(
                     fontSize: 30,
-                    color: Colors.black,
+                    color: AppColors.blue,
                     fontWeight: FontWeight.w900)),
-            SelectableText(
-              nodeId == null ? "Node not initialized" : "@Id_:$nodeId",
-              maxLines: 3,
-              textAlign: TextAlign.start,
-              style: Theme.of(context)
-                  .textTheme
-                  .displaySmall!
-                  .copyWith(color: Colors.black54),
-            ),
+            BoxRow(title: "Listening Address", value: listeningAddress),
+            BoxRow(title: "Node Id", value: nodeId),
+            BoxRow(title: "Funding Address", value: fundingAddress),
           ],
         ));
+  }
+}
+
+class BoxRow extends StatelessWidget {
+  const BoxRow(
+      {super.key,
+      required this.title,
+      required this.value,
+      this.color = Colors.black});
+
+  final String title;
+  final String value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SelectableText.rich(
+      TextSpan(
+        style: TextStyle(fontSize: 12.0, color: color),
+        children: [
+          TextSpan(
+            text: "$title: ",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(text: value),
+        ],
+      ),
+    );
   }
 }
 
@@ -276,148 +337,146 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
               .displayMedium!
               .copyWith(fontWeight: FontWeight.w800),
         ),
-        IconButton(
-            onPressed: () {
-              popUpWidget(
-                context: context,
-                title: 'Open channel',
-                widget: SizedBox(
-                  height: 380,
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        TextFormField(
-                          showCursor: true,
-                          autofocus: true,
-                          style: TextStyle(
-                              color: Colors.black.withOpacity(.8),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700),
-                          decoration:
-                              const InputDecoration(labelText: 'Node Id'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter the nodeId ';
-                            }
-                            setState(() {
-                              nodeId = value;
-                            });
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                showCursor: true,
-                                autofocus: true,
-                                style: TextStyle(
-                                    color: Colors.black.withOpacity(.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700),
-                                decoration: const InputDecoration(
-                                    labelText: 'Ip Address'),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Ip Address';
-                                  }
-                                  setState(() {
-                                    address = value;
-                                  });
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 2.5),
-                            Expanded(
-                              child: TextFormField(
-                                keyboardType: TextInputType.number,
-                                showCursor: true,
-                                autofocus: true,
-                                style: TextStyle(
-                                    color: Colors.black.withOpacity(.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700),
-                                decoration:
-                                    const InputDecoration(labelText: 'Port'),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your port number ';
-                                  }
-                                  setState(() {
-                                    port = int.parse(value.trim());
-                                  });
-                                  return null;
-                                },
-                              ),
-                            )
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          keyboardType: TextInputType.number,
-                          style: TextStyle(
-                              color: Colors.black.withOpacity(.8),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700),
-                          decoration:
-                              const InputDecoration(labelText: 'Amount'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter the Amount';
-                            }
-                            setState(() {
-                              amount = int.parse(value.trim());
-                            });
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          keyboardType: TextInputType.number,
-                          style: TextStyle(
-                              color: Colors.black.withOpacity(.8),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700),
-                          decoration: const InputDecoration(
-                              labelText: 'CounterPartyAmount'),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter the counterPartyAmount';
-                            }
-                            setState(() {
-                              counterPartyAmount = int.parse(value.trim());
-                            });
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 30),
-                        SubmitButton(
-                          text: 'Submit',
-                          callback: () async {
-                            if (_formKey.currentState!.validate()) {
-                              await widget.openChannelCallBack(address, port,
-                                  nodeId, amount, counterPartyAmount);
-                              if (context.mounted) {
-                                Navigator.of(context).pop();
-                              }
-                            }
-                          },
-                        )
-                      ],
+        SmallButton(
+            text: "Add Channel +",
+            callback: () {
+              _channelPopup(context);
+            })
+      ],
+    );
+  }
+
+  _channelPopup(BuildContext context) {
+    popUpWidget(
+      context: context,
+      title: 'Open channel',
+      widget: SizedBox(
+        height: 380,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              TextFormField(
+                showCursor: true,
+                autofocus: true,
+                style: TextStyle(
+                    color: Colors.black.withOpacity(.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
+                decoration: const InputDecoration(labelText: 'Node Id'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the nodeId ';
+                  }
+                  setState(() {
+                    nodeId = value;
+                  });
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      showCursor: true,
+                      autofocus: true,
+                      style: TextStyle(
+                          color: Colors.black.withOpacity(.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700),
+                      decoration:
+                          const InputDecoration(labelText: 'Ip Address'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Ip Address';
+                        }
+                        setState(() {
+                          address = value;
+                        });
+                        return null;
+                      },
                     ),
                   ),
-                ),
-              );
-            },
-            icon: const Icon(
-              Icons.add_circle_outline,
-              color: Colors.black,
-            )),
-      ],
+                  const SizedBox(width: 2.5),
+                  Expanded(
+                    child: TextFormField(
+                      keyboardType: TextInputType.number,
+                      showCursor: true,
+                      autofocus: true,
+                      style: TextStyle(
+                          color: Colors.black.withOpacity(.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700),
+                      decoration: const InputDecoration(labelText: 'Port'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your port number ';
+                        }
+                        setState(() {
+                          port = int.parse(value.trim());
+                        });
+                        return null;
+                      },
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                    color: Colors.black.withOpacity(.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
+                decoration: const InputDecoration(labelText: 'Amount'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the Amount';
+                  }
+                  setState(() {
+                    amount = int.parse(value.trim());
+                  });
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                    color: Colors.black.withOpacity(.8),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
+                decoration:
+                    const InputDecoration(labelText: 'CounterPartyAmount'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the counterPartyAmount';
+                  }
+                  setState(() {
+                    counterPartyAmount = int.parse(value.trim());
+                  });
+                  return null;
+                },
+              ),
+              const SizedBox(height: 30),
+              SubmitButton(
+                text: 'Submit',
+                callback: () async {
+                  if (_formKey.currentState!.validate()) {
+                    await widget.openChannelCallBack(
+                        address, port, nodeId, amount, counterPartyAmount);
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  }
+                },
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -427,14 +486,14 @@ class ChannelListWidget extends StatefulWidget {
   final Future<void> Function(ldk.ChannelId channelId, String nodeId)
       closeChannelCallBack;
   final Future<String> Function(int amount) receivePaymentCallBack;
-  final Future<void> Function(String invoice) sendPaymentCallBack;
-  const ChannelListWidget(
-      {Key? key,
-      required this.channels,
-      required this.closeChannelCallBack,
-      required this.receivePaymentCallBack,
-      required this.sendPaymentCallBack})
-      : super(key: key);
+  final Future<String> Function(String invoice) sendPaymentCallBack;
+  const ChannelListWidget({
+    Key? key,
+    required this.channels,
+    required this.closeChannelCallBack,
+    required this.receivePaymentCallBack,
+    required this.sendPaymentCallBack,
+  }) : super(key: key);
 
   @override
   State<ChannelListWidget> createState() => _ChannelListWidgetState();
@@ -453,227 +512,243 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
     return ListView.builder(
         itemCount: widget.channels.length,
         shrinkWrap: true,
-        itemBuilder: (context, index) => ListTile(
-            leading: Column(
+        itemBuilder: (context, index) => channelListItem(index, context));
+  }
+
+  ListTile channelListItem(int index, BuildContext context) {
+    final isReady = widget.channels[index].isUsable &&
+        widget.channels[index].isChannelReady;
+    return ListTile(
+      tileColor: index % 2 == 0 ? Colors.grey.shade100 : Colors.white,
+      leading: Column(
+        children: [
+          Image.asset(
+            isReady ? "assets/complete.png" : "assets/waiting.png",
+            width: 25,
+          ),
+          SizedBox(height: 5),
+          Text(
+              '${widget.channels[index].confirmations} / ${widget.channels[index].confirmationsRequired!}',
+              overflow: TextOverflow.clip,
+              textAlign: TextAlign.start,
+              style: TextStyle(
+                  color: Colors.black.withOpacity(.7),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500))
+        ],
+      ),
+      title: Text(
+        widget.channels[index].channelId.internal
+            .map((e) => e.toRadixString(16))
+            .toList()
+            .join()
+            .toString(),
+        overflow: TextOverflow.clip,
+        textAlign: TextAlign.start,
+        style: const TextStyle(
+            color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BoxRow(
+            title: "Local",
+            value: '${widget.channels[index].balanceMsat}',
+            color: AppColors.blue,
+          ),
+          Row(
+            children: [
+              BoxRow(
+                title: "Capacity",
+                value: '${widget.channels[index].inboundCapacityMsat}',
+                color: Colors.green,
+              ),
+              BoxRow(
+                title: "Outbound",
+                value: '${widget.channels[index].outboundCapacityMsat}',
+                color: Colors.green,
+              )
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SmallButton(
+                text: "Send",
+                callback: () => {buttonPopup(context, 1, index)},
+                disabled: !isReady,
+              ),
+              SmallButton(
+                text: "Receive",
+                callback: () => {buttonPopup(context, 0, index)},
+                disabled: !isReady,
+              ),
+              SmallButton(
+                text: "Close",
+                callback: () => {buttonPopup(context, 2, index)},
+                disabled: !isReady,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  getInvoice() async {}
+  buttonPopup(BuildContext context, value, index) {
+    if (value == 0) {
+      popUpWidget(
+        context: context,
+        title: 'Receive',
+        widget: IntrinsicHeight(
+          // height: 200,
+          child: Form(
+            key: _receiveKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  (widget.channels[index].isUsable &&
-                          widget.channels[index].isChannelReady)
-                      ? CupertinoIcons.checkmark_seal_fill
-                      : CupertinoIcons.timer_fill,
-                  color: Colors.black,
-                  size: 25,
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(
+                      color: Colors.black.withOpacity(.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                  decoration: const InputDecoration(labelText: 'Amount'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter the Amount';
+                    }
+                    setState(() {
+                      amount = int.parse(value);
+                    });
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 5),
+                SubmitButton(
+                  text: 'Receive',
+                  callback: () async {
+                    if (_receiveKey.currentState!.validate()) {
+                      String invoiceText =
+                          await widget.receivePaymentCallBack(amount);
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                      popUpWidget(
+                        context: context,
+                        title: "Invoice",
+                        widget: SelectableText(invoiceText),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (value == 1) {
+      popUpWidget(
+        context: context,
+        title: 'Send',
+        widget: SizedBox(
+          height: 120,
+          child: Form(
+            key: _sendKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TextFormField(
+                  keyboardType: TextInputType.text,
+                  style: TextStyle(
+                      color: Colors.black.withOpacity(.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                  decoration: const InputDecoration(labelText: 'Invoice'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter the Invoice';
+                    }
+                    setState(() {
+                      invoice = value;
+                    });
+                    return null;
+                  },
                 ),
                 const SizedBox(
                   height: 5,
                 ),
-                Text(
-                    '${widget.channels[index].confirmations} / ${widget.channels[index].confirmationsRequired!}',
-                    overflow: TextOverflow.clip,
-                    textAlign: TextAlign.start,
-                    style: TextStyle(
-                        color: Colors.black.withOpacity(.7),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500))
+                SubmitButton(
+                  text: 'Submit',
+                  callback: () async {
+                    if (_sendKey.currentState!.validate()) {
+                      String status = await widget.sendPaymentCallBack(invoice);
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                      popUpWidget(
+                        context: context,
+                        title: "Send Status",
+                        widget: SelectableText(status),
+                      );
+                    }
+                  },
+                )
               ],
             ),
-            title: Text(
-              widget.channels[index].channelId.internal
-                  .map((e) => e.toRadixString(16))
-                  .toList()
-                  .join()
-                  .toString(),
-              overflow: TextOverflow.clip,
-              textAlign: TextAlign.start,
-              style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700),
+          ),
+        ),
+      );
+    } else if (value == 2) {
+      popUpWidget(
+        context: context,
+        title: 'Close channel',
+        widget: SizedBox(
+          height: 120,
+          child: Form(
+            key: _closeKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TextFormField(
+                  keyboardType: TextInputType.text,
+                  style: TextStyle(
+                      color: Colors.black.withOpacity(.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                  decoration:
+                      const InputDecoration(labelText: 'Counterparty Node Id'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter the Counterparty Node Id';
+                    }
+                    setState(() {
+                      address = value;
+                    });
+                    return null;
+                  },
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                SubmitButton(
+                  text: 'Submit',
+                  callback: () async {
+                    if (_closeKey.currentState!.validate()) {
+                      await widget.closeChannelCallBack(
+                          widget.channels[index].channelId, address);
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    }
+                  },
+                )
+              ],
             ),
-            subtitle: Text(
-                '${widget.channels[index].outboundCapacityMsat} SATS',
-                overflow: TextOverflow.clip,
-                textAlign: TextAlign.start,
-                style: TextStyle(
-                    color: Colors.black.withOpacity(.7),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500)),
-            trailing: PopupMenuButton(
-                shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(15.0))),
-                itemBuilder: (context) {
-                  return [
-                    PopupMenuItem<int>(
-                      value: 0,
-                      child: Text(
-                        "Receive",
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                    PopupMenuItem<int>(
-                      value: 1,
-                      child: Text(
-                        "Send",
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                    PopupMenuItem<int>(
-                      value: 2,
-                      child: Text(
-                        "Close Channel",
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ];
-                },
-                onSelected: (value) {
-                  if (value == 0) {
-                    popUpWidget(
-                      context: context,
-                      title: 'Receive',
-                      widget: SizedBox(
-                        height: 120,
-                        child: Form(
-                          key: _receiveKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              TextFormField(
-                                keyboardType: TextInputType.number,
-                                style: TextStyle(
-                                    color: Colors.black.withOpacity(.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700),
-                                decoration:
-                                    const InputDecoration(labelText: 'Amount'),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter the Amount';
-                                  }
-                                  setState(() {
-                                    amount = int.parse(value);
-                                  });
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(
-                                height: 5,
-                              ),
-                              SubmitButton(
-                                text: 'Receive',
-                                callback: () async {
-                                  if (_receiveKey.currentState!.validate()) {
-                                    await widget.receivePaymentCallBack(amount);
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  }
-                                },
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  } else if (value == 1) {
-                    popUpWidget(
-                      context: context,
-                      title: 'Send',
-                      widget: SizedBox(
-                        height: 120,
-                        child: Form(
-                          key: _sendKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              TextFormField(
-                                keyboardType: TextInputType.text,
-                                style: TextStyle(
-                                    color: Colors.black.withOpacity(.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700),
-                                decoration:
-                                    const InputDecoration(labelText: 'Invoice'),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter the Invoice';
-                                  }
-                                  setState(() {
-                                    invoice = value;
-                                  });
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(
-                                height: 5,
-                              ),
-                              SubmitButton(
-                                text: 'Submit',
-                                callback: () async {
-                                  if (_sendKey.currentState!.validate()) {
-                                    await widget.sendPaymentCallBack(invoice);
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  }
-                                },
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  } else if (value == 2) {
-                    popUpWidget(
-                      context: context,
-                      title: 'Close channel',
-                      widget: SizedBox(
-                        height: 120,
-                        child: Form(
-                          key: _closeKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              TextFormField(
-                                keyboardType: TextInputType.text,
-                                style: TextStyle(
-                                    color: Colors.black.withOpacity(.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700),
-                                decoration: const InputDecoration(
-                                    labelText: 'Counterparty Node Id'),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter the Counterparty Node Id';
-                                  }
-                                  setState(() {
-                                    address = value;
-                                  });
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(
-                                height: 5,
-                              ),
-                              SubmitButton(
-                                text: 'Submit',
-                                callback: () async {
-                                  if (_closeKey.currentState!.validate()) {
-                                    await widget.closeChannelCallBack(
-                                        widget.channels[index].channelId,
-                                        address);
-                                    if (context.mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  }
-                                },
-                              )
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                })));
+          ),
+        ),
+      );
+    }
   }
 }

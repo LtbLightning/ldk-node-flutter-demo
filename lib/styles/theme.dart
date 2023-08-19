@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
+class AppColors {
+  static const blue = Colors.indigoAccent;
+}
+
 ThemeData themeData() {
   InputDecorationTheme inputDecorationTheme() {
     var outlineInputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10.0),
       borderSide: BorderSide(
-        color: Colors.blue.withOpacity(.2),
+        color: Colors.blue,
       ),
     );
     return InputDecorationTheme(
@@ -15,7 +19,7 @@ ThemeData themeData() {
             fontWeight: FontWeight.w500),
         alignLabelWithHint: true,
         filled: true,
-        fillColor: Colors.blue.withOpacity(.01),
+        fillColor: Colors.blue.withOpacity(.1),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 30, vertical: 25),
         enabledBorder: outlineInputBorder,
@@ -33,7 +37,7 @@ ThemeData themeData() {
       displayMedium: TextStyle(
           fontWeight: FontWeight.w900, fontSize: 14, color: Colors.black));
   return ThemeData(
-      secondaryHeaderColor: Colors.indigoAccent,
+      secondaryHeaderColor: AppColors.blue,
       visualDensity: VisualDensity.comfortable,
       textTheme: textTheme,
       inputDecorationTheme: inputDecorationTheme());

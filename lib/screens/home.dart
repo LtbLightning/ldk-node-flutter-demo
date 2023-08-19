@@ -18,8 +18,10 @@ class _HomeState extends State<Home> {
   ldk.PublicKey? aliceNodeId;
   bool built = false;
   bool started = false;
-  static const NODE_DIR = "node";
+  static const NODE_DIR = "ldk_node";
   String displayText = "";
+  String fundingAddress = "";
+  String listeningAddress = "";
   int aliceBalance = 0;
   List<ldk.ChannelDetails> channels = [];
 
@@ -32,7 +34,6 @@ class _HomeState extends State<Home> {
     final directory = await getApplicationDocumentsDirectory();
     final alicePath = "${directory.path}/$NODE_DIR";
     const localEsploraUrl = "http://127.0.0.1:30000";
-    print(alicePath);
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
@@ -41,9 +42,8 @@ class _HomeState extends State<Home> {
         .setStorageDirPath(alicePath)
         .setEsploraServer(esploraServerUrl: localEsploraUrl);
     aliceNode = await builder.build();
-    setState(() {
-      built = true;
-    });
+    await start();
+    await getListeningAddress();
   }
 
   start() async {
@@ -62,7 +62,10 @@ class _HomeState extends State<Home> {
 
   onChainBalance() async {
     await aliceNode!.syncWallets();
-    aliceBalance = await aliceNode!.totalOnchainBalanceSats();
+    final balance = await aliceNode!.totalOnchainBalanceSats();
+    setState(() {
+      aliceBalance = balance;
+    });
 
     if (kDebugMode) {
       print("alice's_balance: $aliceBalance");
@@ -75,15 +78,14 @@ class _HomeState extends State<Home> {
       print("Alice's address: ${aliceAddress.internal}");
     }
     setState(() {
-      displayText = aliceAddress.internal;
+      fundingAddress = aliceAddress.internal;
     });
   }
 
-  listeningAddress() async {
+  getListeningAddress() async {
     final alice = await aliceNode!.listeningAddress();
     setState(() {
-      displayText =
-          "alice's node \n host addr: ${alice!.addr} \n port: ${alice.port} ";
+      listeningAddress = "${alice!.addr}:${alice.port}";
     });
   }
 
@@ -126,16 +128,17 @@ class _HomeState extends State<Home> {
       }
       displayText = "Receive payment invoice${invoice.internal.toString()}";
     });
-    return invoice.toString();
+    return invoice.internal.toString();
   }
 
-  Future<void> sendPayment(String invoice) async {
+  Future<String> sendPayment(String invoice) async {
     final paymentHash =
         await aliceNode!.sendPayment(invoice: ldk.Invoice(internal: invoice));
     final res = await aliceNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
     });
+    return "${res?.status}";
   }
 
   Future<void> closeChannel(ldk.ChannelId channelId, String nodeId) async {
@@ -143,6 +146,8 @@ class _HomeState extends State<Home> {
       channelId: channelId,
       counterpartyNodeId: ldk.PublicKey(internal: nodeId),
     );
+
+    await listChannels();
   }
 
   stop() async {
@@ -156,7 +161,7 @@ class _HomeState extends State<Home> {
       body: SingleChildScrollView(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-          child: !built
+          child: !started
               ? MnemonicWidget(
                   buildCallBack: (String e) async {
                     await buildNode(e);
@@ -164,23 +169,12 @@ class _HomeState extends State<Home> {
                 )
               : Column(
                   children: [
-                    ResponseContainer(
-                      text: displayText,
-                    ),
-
-                    /* Start */
-                    !started
-                        ? SubmitButton(
-                            text: 'Start',
-                            callback: start,
-                          )
-                        : const SizedBox(),
                     /* Balance */
                     BalanceWidget(
                       balance: aliceBalance,
-                      nodeId: aliceNodeId == null
-                          ? 'Not Initialized'
-                          : aliceNodeId!.internal,
+                      nodeId: aliceNodeId!.internal,
+                      fundingAddress: fundingAddress,
+                      listeningAddress: listeningAddress,
                     ),
                     const SizedBox(height: 20),
                     SubmitButton(
@@ -191,11 +185,6 @@ class _HomeState extends State<Home> {
                     SubmitButton(
                       text: 'New Funding Address',
                       callback: newFundingAddress,
-                    ),
-                    /* Listening Address */
-                    SubmitButton(
-                      text: 'Listening Address',
-                      callback: listeningAddress,
                     ),
                     SubmitButton(
                       text: 'List Channels',
