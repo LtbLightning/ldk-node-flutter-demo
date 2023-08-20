@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   static const blue = Colors.indigoAccent;
+  static const lightOrange = Color(0xFFEFD3B6);
 }
 
 ThemeData themeData() {
@@ -19,7 +20,6 @@ ThemeData themeData() {
             fontWeight: FontWeight.w500),
         alignLabelWithHint: true,
         filled: true,
-        fillColor: Colors.blue.withOpacity(.1),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 30, vertical: 25),
         enabledBorder: outlineInputBorder,

@@ -14,15 +14,19 @@ class SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: callback,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.blue,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-      ),
-      child: Center(
-        child: Text(text),
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 5),
+      child: ElevatedButton(
+        onPressed: callback,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.blue,
+          padding: EdgeInsets.all(17),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+        ),
+        child: Center(
+          child: Text(text),
+        ),
       ),
     );
   }
@@ -45,13 +49,20 @@ class SmallButton extends StatelessWidget {
     return TextButton(
       onPressed: !disabled ? callback : null,
       style: TextButton.styleFrom(
-        backgroundColor: Colors.transparent,
+        padding: EdgeInsets.symmetric(horizontal: 10),
+        minimumSize: Size(80, 30),
+        backgroundColor: Color(0xFFFD7E14),
         foregroundColor: disabled ? Colors.grey : Colors.black,
         side: BorderSide(width: 1.0, color: AppColors.blue),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-        minimumSize: Size.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        elevation: 2,
       ),
-      child: Center(child: Text(text)),
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 13),
+        ),
+      ),
     );
   }
 }
@@ -199,7 +210,7 @@ class BalanceWidget extends StatelessWidget {
         decoration: BoxDecoration(
             color: AppColors.blue.withOpacity(.25),
             border: Border.all(
-              width: 4,
+              width: 2,
               color: AppColors.blue,
             ),
             borderRadius: BorderRadius.circular(20)),
@@ -277,7 +288,8 @@ class _MnemonicWidgetState extends State<MnemonicWidget> {
                     color: Colors.black.withOpacity(.8),
                     fontSize: 12,
                     fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(labelText: 'Mnemonic'),
+                decoration: const InputDecoration(
+                    labelText: 'Mnemonic', fillColor: AppColors.lightOrange),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a valid mnemonic';
@@ -338,7 +350,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
               .copyWith(fontWeight: FontWeight.w800),
         ),
         SmallButton(
-            text: "Add Channel +",
+            text: "+ Channel",
             callback: () {
               _channelPopup(context);
             })
@@ -509,17 +521,22 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return ListView.separated(
+        separatorBuilder: (context, index) => SizedBox(height: 10),
         itemCount: widget.channels.length,
         shrinkWrap: true,
+        scrollDirection: Axis.vertical,
         itemBuilder: (context, index) => channelListItem(index, context));
   }
 
   ListTile channelListItem(int index, BuildContext context) {
     final isReady = widget.channels[index].isUsable &&
         widget.channels[index].isChannelReady;
+    var borderRadius = BorderRadius.all(Radius.circular(12));
     return ListTile(
       tileColor: index % 2 == 0 ? Colors.grey.shade100 : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: borderRadius),
+      contentPadding: EdgeInsets.all(7),
       leading: Column(
         children: [
           Image.asset(
@@ -537,60 +554,77 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                   fontWeight: FontWeight.w500))
         ],
       ),
-      title: Text(
-        widget.channels[index].channelId.internal
-            .map((e) => e.toRadixString(16))
-            .toList()
-            .join()
-            .toString(),
-        overflow: TextOverflow.clip,
-        textAlign: TextAlign.start,
-        style: const TextStyle(
-            color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+      title: Transform(
+        transform: Matrix4.translationValues(-16, 0.0, 0.0),
+        child: Text(
+          widget.channels[index].channelId.internal
+              .map((e) => e.toRadixString(16))
+              .toList()
+              .join()
+              .toString(),
+          overflow: TextOverflow.clip,
+          textAlign: TextAlign.start,
+          style: const TextStyle(
+              color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+        ),
       ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          BoxRow(
-            title: "Local",
-            value: '${widget.channels[index].balanceMsat}',
-            color: AppColors.blue,
-          ),
-          Row(
-            children: [
-              BoxRow(
-                title: "Capacity",
-                value: '${widget.channels[index].inboundCapacityMsat}',
-                color: Colors.green,
-              ),
-              BoxRow(
-                title: "Outbound",
-                value: '${widget.channels[index].outboundCapacityMsat}',
-                color: Colors.green,
-              )
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SmallButton(
-                text: "Send",
-                callback: () => {buttonPopup(context, 1, index)},
-                disabled: !isReady,
-              ),
-              SmallButton(
-                text: "Receive",
-                callback: () => {buttonPopup(context, 0, index)},
-                disabled: !isReady,
-              ),
-              SmallButton(
-                text: "Close",
-                callback: () => {buttonPopup(context, 2, index)},
-                disabled: !isReady,
-              ),
-            ],
-          ),
-        ],
+      subtitle: Transform(
+        transform: Matrix4.translationValues(-16, 4.0, 0.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                BoxRow(
+                  title: "Capacity",
+                  value: '${widget.channels[index].channelValueSats}',
+                  color: AppColors.blue,
+                ),
+                BoxRow(
+                  title: "Local Balance",
+                  value: '${widget.channels[index].balanceMsat}',
+                  color: Colors.green,
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                BoxRow(
+                  title: "Inbound",
+                  value: '${widget.channels[index].inboundCapacityMsat}',
+                  color: Colors.green,
+                ),
+                BoxRow(
+                  title: "     Outbound",
+                  value: '${widget.channels[index].outboundCapacityMsat}',
+                  color: Colors.red,
+                )
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SmallButton(
+                  text: "Send",
+                  callback: () => {buttonPopup(context, 1, index)},
+                  disabled: !isReady,
+                ),
+                SmallButton(
+                  text: "Receive",
+                  callback: () => {buttonPopup(context, 0, index)},
+                  disabled: !isReady,
+                ),
+                SmallButton(
+                  text: "Close",
+                  callback: () => {buttonPopup(context, 2, index)},
+                  disabled: !isReady,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

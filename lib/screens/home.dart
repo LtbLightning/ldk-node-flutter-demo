@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
@@ -37,7 +39,7 @@ class _HomeState extends State<Home> {
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
-            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 5001))
+            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 5000))
         .setNetwork(ldk.Network.regtest)
         .setStorageDirPath(alicePath)
         .setEsploraServer(esploraServerUrl: localEsploraUrl);
@@ -105,7 +107,8 @@ class _HomeState extends State<Home> {
   listChannels() async {
     final res = await aliceNode!.listChannels();
     setState(() {
-      channels = res;
+      // channels = res;
+      channels = res.length > 0 ? List.filled(5, res[0]) : res;
     });
     if (kDebugMode) {
       print("======Channels========");
@@ -156,60 +159,70 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-          child: !started
-              ? MnemonicWidget(
-                  buildCallBack: (String e) async {
-                    await buildNode(e);
-                  },
-                )
-              : Column(
-                  children: [
-                    /* Balance */
-                    BalanceWidget(
-                      balance: aliceBalance,
-                      nodeId: aliceNodeId!.internal,
-                      fundingAddress: fundingAddress,
-                      listeningAddress: listeningAddress,
-                    ),
-                    const SizedBox(height: 20),
-                    SubmitButton(
-                      text: 'On Chain Balance',
-                      callback: onChainBalance,
-                    ),
-                    /* New Funding Address */
-                    SubmitButton(
-                      text: 'New Funding Address',
-                      callback: newFundingAddress,
-                    ),
-                    SubmitButton(
-                      text: 'List Channels',
-                      callback: listChannels,
-                    ),
-                    /* ChannelsActionBar */
-                    ChannelsActionBar(openChannelCallBack: connectOpenChannel),
-                    channels.isEmpty
-                        ? const Text(
-                            'No Open Channels',
-                            overflow: TextOverflow.clip,
-                            textAlign: TextAlign.start,
-                            style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500),
-                          )
-                        : ChannelListWidget(
-                            channels: channels,
-                            closeChannelCallBack: closeChannel,
-                            receivePaymentCallBack: receivePayment,
-                            sendPaymentCallBack: sendPayment,
-                          )
-                  ],
-                ),
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage("assets/background.png"),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: buildAppBar(context),
+        body: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: !started
+                ? MnemonicWidget(
+                    buildCallBack: (String e) async {
+                      await buildNode(e);
+                    },
+                  )
+                : Column(
+                    children: [
+                      /* Balance */
+                      BalanceWidget(
+                        balance: aliceBalance,
+                        nodeId: aliceNodeId!.internal,
+                        fundingAddress: fundingAddress,
+                        listeningAddress: listeningAddress,
+                      ),
+                      const SizedBox(height: 5),
+                      SubmitButton(
+                        text: 'On Chain Balance',
+                        callback: onChainBalance,
+                      ),
+                      /* New Funding Address */
+                      SubmitButton(
+                        text: 'New Funding Address',
+                        callback: newFundingAddress,
+                      ),
+                      SubmitButton(
+                        text: 'List Channels',
+                        callback: listChannels,
+                      ),
+                      /* ChannelsActionBar */
+                      ChannelsActionBar(
+                          openChannelCallBack: connectOpenChannel),
+                      channels.isEmpty
+                          ? const Text(
+                              'No Open Channels',
+                              overflow: TextOverflow.clip,
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500),
+                            )
+                          : ChannelListWidget(
+                              channels: channels,
+                              closeChannelCallBack: closeChannel,
+                              receivePaymentCallBack: receivePayment,
+                              sendPaymentCallBack: sendPayment,
+                            )
+                    ],
+                  ),
+          ),
         ),
       ),
     );
