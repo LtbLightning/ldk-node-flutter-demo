@@ -107,8 +107,7 @@ class _HomeState extends State<Home> {
   listChannels() async {
     final res = await aliceNode!.listChannels();
     setState(() {
-      // channels = res;
-      channels = res.length > 0 ? List.filled(5, res[0]) : res;
+      channels = res;
     });
     if (kDebugMode) {
       print("======Channels========");
