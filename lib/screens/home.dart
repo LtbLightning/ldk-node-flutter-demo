@@ -39,7 +39,7 @@ class _HomeState extends State<Home> {
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
-            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 5000))
+            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 2000))
         .setNetwork(ldk.Network.regtest)
         .setStorageDirPath(alicePath)
         .setEsploraServer(esploraServerUrl: localEsploraUrl);

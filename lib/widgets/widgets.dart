@@ -204,11 +204,11 @@ class BalanceWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
         width: double.infinity,
-        height: 150,
+        height: 130,
         decoration: BoxDecoration(
-            color: AppColors.blue.withOpacity(.25),
+            color: AppColors.lightOrange,
             border: Border.all(
               width: 2,
               color: AppColors.blue,
@@ -220,7 +220,7 @@ class BalanceWidget extends StatelessWidget {
           children: [
             Text("${balance / 100000000} BTC",
                 style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                    fontSize: 30,
+                    fontSize: 25,
                     color: AppColors.blue,
                     fontWeight: FontWeight.w900)),
             BoxRow(title: "Listening Address", value: listeningAddress),
