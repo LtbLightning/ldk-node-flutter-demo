@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, use_build_context_synchronously
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk;
 import 'package:ldk_node_flutter_quickstart/styles/theme.dart';
@@ -15,17 +14,19 @@ class SubmitButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 5),
+      margin: EdgeInsets.symmetric(vertical: 8),
       child: ElevatedButton(
         onPressed: callback,
         style: ElevatedButton.styleFrom(
+          elevation: 3,
+          shadowColor: AppColors.blue,
           backgroundColor: AppColors.blue,
           padding: EdgeInsets.all(17),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
         ),
         child: Center(
-          child: Text(text),
+          child: Text(text, style: TextStyle(fontSize: 18)),
         ),
       ),
     );
@@ -55,7 +56,7 @@ class SmallButton extends StatelessWidget {
         foregroundColor: disabled ? Colors.grey : Colors.black,
         side: BorderSide(width: 1.0, color: AppColors.blue),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        elevation: 2,
+        elevation: 5,
       ),
       child: Center(
         child: Text(
@@ -100,7 +101,7 @@ popUpWidget(
 
 PreferredSize buildAppBar(BuildContext context) {
   return PreferredSize(
-    preferredSize: Size.fromHeight(40), // Set this height
+    preferredSize: Size.fromHeight(50), // Set this height
     child: Container(
       padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top, left: 30, right: 30),
@@ -108,15 +109,17 @@ PreferredSize buildAppBar(BuildContext context) {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: AppColors.blue, width: 1),
-              ),
-              child: Container(
-                padding: EdgeInsets.all(5),
-                child: Image.asset("assets/flutter-logo.png",
-                    width: 30, height: 30),
-              )),
+            width: 50,
+            height: 50,
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Color.fromARGB(255, 59, 32, 133),
+              border: Border.all(color: AppColors.blue, width: 1),
+              borderRadius: BorderRadius.circular(
+                  25.0), // Make sure to adjust this so it fits nicely within the outer container
+            ),
+            child: Image.asset("assets/flutter-logo.png"),
+          ),
           Spacer(),
           Text(
             'Demo App \n Ldk Node Flutter',
@@ -124,9 +127,17 @@ PreferredSize buildAppBar(BuildContext context) {
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
           ),
           Spacer(),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(25.0),
-            child: Image.asset("assets/logo.png"),
+          Container(
+            width: 50,
+            height: 50,
+            padding: EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("assets/ldk-logo.png"),
+                fit: BoxFit.cover,
+              ),
+              borderRadius: BorderRadius.circular(25.0),
+            ),
           ),
         ],
       ),
@@ -162,7 +173,7 @@ class ResponseContainer extends StatelessWidget {
               ],
             ),
           ),
-        ));
+        )); // Your widget tree
   }
 }
 
@@ -208,12 +219,20 @@ class BalanceWidget extends StatelessWidget {
         width: double.infinity,
         height: 130,
         decoration: BoxDecoration(
-            color: AppColors.lightOrange,
-            border: Border.all(
-              width: 2,
-              color: AppColors.blue,
-            ),
-            borderRadius: BorderRadius.circular(20)),
+          color: AppColors.lightOrange,
+          border: Border.all(
+            width: 2,
+            color: AppColors.blue,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey,
+              blurRadius: 12.0, // soften the shadow
+              // spreadRadius: 1.0, //extend the shadow
+            )
+          ],
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,31 +297,45 @@ class _MnemonicWidgetState extends State<MnemonicWidget> {
         Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                maxLines: 8,
-                showCursor: true,
-                autofocus: true,
-                style: TextStyle(
-                    color: Colors.black.withOpacity(.8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700),
-                decoration: const InputDecoration(
-                    labelText: 'Mnemonic', fillColor: AppColors.lightOrange),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a valid mnemonic';
-                  }
-                  setState(() {
-                    aliceMnemonic = value;
-                  });
-                  return null;
-                },
+              Text("Enter Mnemonic",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              Material(
+                elevation: 5,
+                borderRadius: BorderRadius.circular(20),
+                child: TextFormField(
+                  maxLines: 6,
+                  showCursor: true,
+                  autofocus: true,
+                  style: TextStyle(
+                      color: Colors.black.withOpacity(.8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                  decoration: InputDecoration(
+                    labelText: 'Mnemonic',
+                    floatingLabelBehavior: FloatingLabelBehavior.never,
+                    fillColor: AppColors.lightOrange,
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.blue, width: 2),
+                      borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a valid mnemonic';
+                    }
+                    setState(() {
+                      aliceMnemonic = value;
+                    });
+                    return null;
+                  },
+                ),
               ),
               const SizedBox(height: 10),
               SubmitButton(
-                text: 'Build Node',
+                text: 'Start Node',
                 callback: () async {
                   if (_formKey.currentState!.validate() &&
                       aliceMnemonic != null) {
@@ -495,7 +528,7 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
 
 class ChannelListWidget extends StatefulWidget {
   final List<ldk.ChannelDetails> channels;
-  final Future<void> Function(ldk.ChannelId channelId, String nodeId)
+  final Future<void> Function(ldk.ChannelId channelId, ldk.PublicKey nodeId)
       closeChannelCallBack;
   final Future<String> Function(int amount) receivePaymentCallBack;
   final Future<String> Function(String invoice) sendPaymentCallBack;
@@ -583,7 +616,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                 ),
                 BoxRow(
                   title: "Local Balance",
-                  value: '${widget.channels[index].balanceMsat}',
+                  value: '${widget.channels[index].balanceMsat / 1000}',
                   color: Colors.green,
                 ),
               ],
@@ -593,12 +626,13 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
               children: [
                 BoxRow(
                   title: "Inbound",
-                  value: '${widget.channels[index].inboundCapacityMsat}',
+                  value: '${widget.channels[index].inboundCapacityMsat / 1000}',
                   color: Colors.green,
                 ),
                 BoxRow(
                   title: "     Outbound",
-                  value: '${widget.channels[index].outboundCapacityMsat}',
+                  value:
+                      '${widget.channels[index].outboundCapacityMsat / 1000}',
                   color: Colors.red,
                 )
               ],
@@ -687,7 +721,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         context: context,
         title: 'Send',
         widget: SizedBox(
-          height: 120,
+          height: 130,
           child: Form(
             key: _sendKey,
             child: Column(
@@ -714,7 +748,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                   height: 5,
                 ),
                 SubmitButton(
-                  text: 'Submit',
+                  text: 'Send',
                   callback: () async {
                     if (_sendKey.currentState!.validate()) {
                       String status = await widget.sendPaymentCallBack(invoice);
@@ -724,7 +758,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                       popUpWidget(
                         context: context,
                         title: "Send Status",
-                        widget: SelectableText(status),
+                        widget: SelectableText('Invoice Paid'),
                       );
                     }
                   },
@@ -735,54 +769,8 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         ),
       );
     } else if (value == 2) {
-      popUpWidget(
-        context: context,
-        title: 'Close channel',
-        widget: SizedBox(
-          height: 120,
-          child: Form(
-            key: _closeKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                TextFormField(
-                  keyboardType: TextInputType.text,
-                  style: TextStyle(
-                      color: Colors.black.withOpacity(.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
-                  decoration:
-                      const InputDecoration(labelText: 'Counterparty Node Id'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the Counterparty Node Id';
-                    }
-                    setState(() {
-                      address = value;
-                    });
-                    return null;
-                  },
-                ),
-                const SizedBox(
-                  height: 5,
-                ),
-                SubmitButton(
-                  text: 'Submit',
-                  callback: () async {
-                    if (_closeKey.currentState!.validate()) {
-                      await widget.closeChannelCallBack(
-                          widget.channels[index].channelId, address);
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    }
-                  },
-                )
-              ],
-            ),
-          ),
-        ),
-      );
+      widget.closeChannelCallBack(widget.channels[index].channelId,
+          widget.channels[index].counterpartyNodeId);
     }
   }
 }

@@ -16,15 +16,15 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  ldk.Node? aliceNode;
-  ldk.PublicKey? aliceNodeId;
+  ldk.Node? ldkNode;
+  ldk.PublicKey? ldkNodeId;
   bool built = false;
   bool started = false;
-  static const NODE_DIR = "ldk_node";
+  static const LDK_NODE_DIR = "LDK_NODE";
   String displayText = "";
   String fundingAddress = "";
   String listeningAddress = "";
-  int aliceBalance = 0;
+  int ldkNodeBalance = 0;
   List<ldk.ChannelDetails> channels = [];
 
   @override
@@ -34,27 +34,28 @@ class _HomeState extends State<Home> {
 
   buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
-    final alicePath = "${directory.path}/$NODE_DIR";
+    final storagePath = "${directory.path}/$LDK_NODE_DIR";
+    print('Storage Path: $storagePath');
     const localEsploraUrl = "http://127.0.0.1:30000";
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
         .setListeningAddress(
-            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 2000))
+            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 3004))
         .setNetwork(ldk.Network.regtest)
-        .setStorageDirPath(alicePath)
+        .setStorageDirPath(storagePath)
         .setEsploraServer(esploraServerUrl: localEsploraUrl);
-    aliceNode = await builder.build();
+    ldkNode = await builder.build();
     await start();
     await getListeningAddress();
   }
 
   start() async {
     try {
-      final _ = await aliceNode!.start();
-      aliceNodeId = await aliceNode!.nodeId();
+      final _ = await ldkNode!.start();
+      ldkNodeId = await ldkNode!.nodeId();
       setState(() {
         started = true;
-        displayText = "${aliceNodeId?.internal}.started successfully";
+        displayText = "${ldkNodeId?.internal}.started successfully";
       });
     } on Exception catch (e) {
       print("Error in starting Node");
@@ -63,37 +64,37 @@ class _HomeState extends State<Home> {
   }
 
   onChainBalance() async {
-    await aliceNode!.syncWallets();
-    final balance = await aliceNode!.totalOnchainBalanceSats();
+    await ldkNode!.syncWallets();
+    final balance = await ldkNode!.totalOnchainBalanceSats();
     setState(() {
-      aliceBalance = balance;
+      ldkNodeBalance = balance;
     });
 
     if (kDebugMode) {
-      print("alice's_balance: $aliceBalance");
+      print("Wallet onchain balance: $ldkNodeBalance");
     }
   }
 
   newFundingAddress() async {
-    final aliceAddress = await aliceNode!.newOnchainAddress();
+    final ldkNodeAddress = await ldkNode!.newOnchainAddress();
     if (kDebugMode) {
-      print("Alice's address: ${aliceAddress.internal}");
+      print("ldkNode's address: ${ldkNodeAddress.internal}");
     }
     setState(() {
-      fundingAddress = aliceAddress.internal;
+      fundingAddress = ldkNodeAddress.internal;
     });
   }
 
   getListeningAddress() async {
-    final alice = await aliceNode!.listeningAddress();
+    final hostAndPort = await ldkNode!.listeningAddress();
     setState(() {
-      listeningAddress = "${alice!.addr}:${alice.port}";
+      listeningAddress = "${hostAndPort!.addr}:${hostAndPort.port}";
     });
   }
 
   Future<void> connectOpenChannel(String host, int port, String nodeId,
       int amount, int pushToCounterpartyMsat) async {
-    await aliceNode!.connectOpenChannel(
+    await ldkNode!.connectOpenChannel(
         channelAmountSats: amount,
         announceChannel: true,
         pushToCounterpartyMsat: pushToCounterpartyMsat,
@@ -105,7 +106,7 @@ class _HomeState extends State<Home> {
   }
 
   listChannels() async {
-    final res = await aliceNode!.listChannels();
+    final res = await ldkNode!.listChannels();
     setState(() {
       channels = res;
     });
@@ -122,7 +123,7 @@ class _HomeState extends State<Home> {
   }
 
   Future<String> receivePayment(int amount) async {
-    final invoice = await aliceNode!
+    final invoice = await ldkNode!
         .receivePayment(amountMsat: amount, description: '', expirySecs: 10000);
     setState(() {
       if (kDebugMode) {
@@ -135,25 +136,25 @@ class _HomeState extends State<Home> {
 
   Future<String> sendPayment(String invoice) async {
     final paymentHash =
-        await aliceNode!.sendPayment(invoice: ldk.Invoice(internal: invoice));
-    final res = await aliceNode!.payment(paymentHash: paymentHash);
+        await ldkNode!.sendPayment(invoice: ldk.Invoice(internal: invoice));
+    final res = await ldkNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
     });
     return "${res?.status}";
   }
 
-  Future<void> closeChannel(ldk.ChannelId channelId, String nodeId) async {
-    await aliceNode!.closeChannel(
+  Future<void> closeChannel(ldk.ChannelId channelId, ldk.PublicKey nodeId) async {
+    await ldkNode!.closeChannel(
       channelId: channelId,
-      counterpartyNodeId: ldk.PublicKey(internal: nodeId),
+      counterpartyNodeId: nodeId,
     );
 
     await listChannels();
   }
 
   stop() async {
-    await aliceNode!.stop();
+    await ldkNode!.stop();
   }
 
   @override
@@ -181,8 +182,8 @@ class _HomeState extends State<Home> {
                     children: [
                       /* Balance */
                       BalanceWidget(
-                        balance: aliceBalance,
-                        nodeId: aliceNodeId!.internal,
+                        balance: ldkNodeBalance,
+                        nodeId: ldkNodeId!.internal,
                         fundingAddress: fundingAddress,
                         listeningAddress: listeningAddress,
                       ),
