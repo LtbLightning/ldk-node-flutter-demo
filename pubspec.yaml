@@ -1,4 +1,4 @@
-name: ldk_node_flutter_quickstart
+name: ldk_node_flutter_demo
 description: A new Flutter project.
 publish_to: "none"
 version: 1.0.0+1
@@ -12,8 +12,9 @@ dependencies:
   path_provider: ^2.0.12
   ldk_node:
     git:
-      url: https://github.com/LtbLightning/ldk-node-flutter/
-      ref: main
+      url: https://github.com/LtbLightning/ldk_node_flutter
+      ref: v0.2.1
+  rename: ^3.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

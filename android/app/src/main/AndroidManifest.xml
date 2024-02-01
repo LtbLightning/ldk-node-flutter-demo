@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.ldk.qs.ldk_node_flutter_quickstart">
+    package="io.ldk.qs.ldk_node_flutter_demo">
    <application
-        android:label="ldk_node_flutter_quickstart"
+        android:label="ldk_node_flutter_demo"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

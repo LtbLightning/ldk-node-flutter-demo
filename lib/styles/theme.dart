@@ -9,7 +9,7 @@ ThemeData themeData() {
   InputDecorationTheme inputDecorationTheme() {
     var outlineInputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10.0),
-      borderSide: BorderSide(
+      borderSide: const BorderSide(
         color: Colors.blue,
       ),
     );

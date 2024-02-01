@@ -5,7 +5,7 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk;
-import 'package:ldk_node_flutter_quickstart/widgets/widgets.dart';
+import 'package:ldk_node_flutter_demo/widgets/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Home extends StatefulWidget {
@@ -35,15 +35,15 @@ class _HomeState extends State<Home> {
   buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final storagePath = "${directory.path}/$LDK_NODE_DIR";
-    print('Storage Path: $storagePath');
-    const localEsploraUrl = "http://127.0.0.1:30000";
+    debugPrint('Storage Path: $storagePath');
+    const localEsploraUrl = "https://testnet-electrs.ltbl.io:3004";
     final builder = ldk.Builder()
-        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
-        .setListeningAddress(
-            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 3004))
-        .setNetwork(ldk.Network.regtest)
+        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(mnemonic))
+        .setListeningAddresses(
+            [const ldk.SocketAddress.hostname(addr: "0.0.0.0", port: 3005)])
+        .setNetwork(ldk.Network.Testnet)
         .setStorageDirPath(storagePath)
-        .setEsploraServer(esploraServerUrl: localEsploraUrl);
+        .setEsploraServer(localEsploraUrl);
     ldkNode = await builder.build();
     await start();
     await getListeningAddress();
@@ -55,11 +55,11 @@ class _HomeState extends State<Home> {
       ldkNodeId = await ldkNode!.nodeId();
       setState(() {
         started = true;
-        displayText = "${ldkNodeId?.internal}.started successfully";
+        displayText = "${ldkNodeId?.hexCode}.started successfully";
       });
     } on Exception catch (e) {
-      print("Error in starting Node");
-      print(e);
+      debugPrint("Error in starting Node");
+      debugPrint(e.toString());
     }
   }
 
@@ -78,17 +78,23 @@ class _HomeState extends State<Home> {
   newFundingAddress() async {
     final ldkNodeAddress = await ldkNode!.newOnchainAddress();
     if (kDebugMode) {
-      print("ldkNode's address: ${ldkNodeAddress.internal}");
+      print("ldkNode's address: ${ldkNodeAddress.s}");
     }
     setState(() {
-      fundingAddress = ldkNodeAddress.internal;
+      fundingAddress = ldkNodeAddress.s;
     });
   }
 
   getListeningAddress() async {
-    final hostAndPort = await ldkNode!.listeningAddress();
+    final hostAndPort = await ldkNode!.listeningAddresses();
+    final addr = hostAndPort![0];
+
     setState(() {
-      listeningAddress = "${hostAndPort!.addr}:${hostAndPort.port}";
+      addr.maybeMap(
+          orElse: () {},
+          hostname: (e) {
+            listeningAddress = "${e.addr}:${e.port}";
+          });
     });
   }
 
@@ -97,9 +103,9 @@ class _HomeState extends State<Home> {
     await ldkNode!.connectOpenChannel(
         channelAmountSats: amount,
         announceChannel: true,
-        pushToCounterpartyMsat: pushToCounterpartyMsat,
-        address: ldk.NetAddress.iPv4(addr: host, port: port),
-        nodeId: ldk.PublicKey(internal: nodeId));
+        pushToCounterpartyMsat: satsToMsats(pushToCounterpartyMsat),
+        netaddress: ldk.SocketAddress.hostname(addr: host, port: port),
+        nodeId: ldk.PublicKey(hexCode: nodeId));
     if (kDebugMode) {
       print("temporary channel opened");
     }
@@ -123,20 +129,24 @@ class _HomeState extends State<Home> {
   }
 
   Future<String> receivePayment(int amount) async {
-    final invoice = await ldkNode!
-        .receivePayment(amountMsat: amount, description: '', expirySecs: 10000);
+    final invoice = await ldkNode!.receivePayment(
+      amountMsat: satsToMsats(amount),
+      description: 'test',
+      expirySecs: 9000,
+    );
     setState(() {
       if (kDebugMode) {
-        print(invoice.internal.toString());
+        print(invoice.signedRawInvoice.toString());
       }
-      displayText = "Receive payment invoice${invoice.internal.toString()}";
+      displayText =
+          "Receive payment invoice${invoice.signedRawInvoice.toString()}";
     });
-    return invoice.internal.toString();
+    return invoice.signedRawInvoice.toString();
   }
 
   Future<String> sendPayment(String invoice) async {
-    final paymentHash =
-        await ldkNode!.sendPayment(invoice: ldk.Invoice(internal: invoice));
+    final paymentHash = await ldkNode!
+        .sendPayment(invoice: ldk.Bolt11Invoice(signedRawInvoice: invoice));
     final res = await ldkNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
@@ -144,7 +154,8 @@ class _HomeState extends State<Home> {
     return "${res?.status}";
   }
 
-  Future<void> closeChannel(ldk.ChannelId channelId, ldk.PublicKey nodeId) async {
+  Future<void> closeChannel(
+      ldk.ChannelId channelId, ldk.PublicKey nodeId) async {
     await ldkNode!.closeChannel(
       channelId: channelId,
       counterpartyNodeId: nodeId,
@@ -171,7 +182,7 @@ class _HomeState extends State<Home> {
         appBar: buildAppBar(context),
         body: SingleChildScrollView(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
             child: !started
                 ? MnemonicWidget(
                     buildCallBack: (String e) async {
@@ -183,7 +194,7 @@ class _HomeState extends State<Home> {
                       /* Balance */
                       BalanceWidget(
                         balance: ldkNodeBalance,
-                        nodeId: ldkNodeId!.internal,
+                        nodeId: ldkNodeId!.hexCode,
                         fundingAddress: fundingAddress,
                         listeningAddress: listeningAddress,
                       ),

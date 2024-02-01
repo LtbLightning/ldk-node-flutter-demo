@@ -2,7 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk;
-import 'package:ldk_node_flutter_quickstart/styles/theme.dart';
+import 'package:ldk_node_flutter_demo/styles/theme.dart';
+
+int satsToMsats(int sats) => sats * 1000;
+String mSatsToSats(int mSats) => '${mSats ~/ 1000}sats';
 
 class SubmitButton extends StatelessWidget {
   final String text;
@@ -26,7 +29,11 @@ class SubmitButton extends StatelessWidget {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
         ),
         child: Center(
-          child: Text(text, style: TextStyle(fontSize: 18)),
+          child: Text(text,
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white,
+              )),
         ),
       ),
     );
@@ -54,7 +61,7 @@ class SmallButton extends StatelessWidget {
         minimumSize: Size(80, 30),
         backgroundColor: Color(0xFFFD7E14),
         foregroundColor: disabled ? Colors.grey : Colors.black,
-        side: BorderSide(width: 1.0, color: AppColors.blue),
+        //  side: BorderSide(width: 1.0, color: AppColors.blue),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         elevation: 5,
       ),
@@ -217,7 +224,6 @@ class BalanceWidget extends StatelessWidget {
     return Container(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
         width: double.infinity,
-        height: 130,
         decoration: BoxDecoration(
           color: AppColors.lightOrange,
           border: Border.all(
@@ -233,19 +239,25 @@ class BalanceWidget extends StatelessWidget {
             )
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("${balance / 100000000} BTC",
-                style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                    fontSize: 25,
-                    color: AppColors.blue,
-                    fontWeight: FontWeight.w900)),
-            BoxRow(title: "Listening Address", value: listeningAddress),
-            BoxRow(title: "Node Id", value: nodeId),
-            BoxRow(title: "Funding Address", value: fundingAddress),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text("${balance / 100000000} BTC",
+                    style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                        fontSize: 25,
+                        color: AppColors.blue,
+                        fontWeight: FontWeight.w900)),
+              ),
+              BoxRow(title: "Listening Address", value: listeningAddress),
+              BoxRow(title: "Node Id", value: nodeId),
+              BoxRow(title: "Funding Address", value: fundingAddress),
+            ],
+          ),
         ));
   }
 }
@@ -263,16 +275,18 @@ class BoxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText.rich(
-      TextSpan(
-        style: TextStyle(fontSize: 12.0, color: color),
-        children: [
-          TextSpan(
-            text: "$title: ",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          TextSpan(text: value),
-        ],
+    return Flexible(
+      child: SelectableText.rich(
+        TextSpan(
+          style: TextStyle(fontSize: 12.0, color: color),
+          children: [
+            TextSpan(
+              text: "$title: ",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
       ),
     );
   }
@@ -291,11 +305,11 @@ class _MnemonicWidgetState extends State<MnemonicWidget> {
   String? aliceMnemonic;
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     return Column(
       children: [
         Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -337,7 +351,7 @@ class _MnemonicWidgetState extends State<MnemonicWidget> {
               SubmitButton(
                 text: 'Start Node',
                 callback: () async {
-                  if (_formKey.currentState!.validate() &&
+                  if (formKey.currentState!.validate() &&
                       aliceMnemonic != null) {
                     await widget.buildCallBack(aliceMnemonic!);
                   }
@@ -395,8 +409,8 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
     popUpWidget(
       context: context,
       title: 'Open channel',
-      widget: SizedBox(
-        height: 380,
+      widget: SingleChildScrollView(
+        padding: EdgeInsets.all(8),
         child: Form(
           key: _formKey,
           child: Column(
@@ -493,8 +507,8 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
                     color: Colors.black.withOpacity(.8),
                     fontSize: 12,
                     fontWeight: FontWeight.w700),
-                decoration:
-                    const InputDecoration(labelText: 'CounterPartyAmount'),
+                decoration: const InputDecoration(
+                    labelText: 'CounterPartyAmount in sats'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter the counterPartyAmount';
@@ -549,7 +563,6 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
   String address = "";
   final _receiveKey = GlobalKey<FormState>();
   final _sendKey = GlobalKey<FormState>();
-  final _closeKey = GlobalKey<FormState>();
   String invoice = "";
 
   @override
@@ -558,6 +571,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         separatorBuilder: (context, index) => SizedBox(height: 10),
         itemCount: widget.channels.length,
         shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
         scrollDirection: Axis.vertical,
         itemBuilder: (context, index) => channelListItem(index, context));
   }
@@ -569,97 +583,117 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
     return ListTile(
       tileColor: index % 2 == 0 ? Colors.grey.shade100 : Colors.white,
       shape: RoundedRectangleBorder(borderRadius: borderRadius),
-      contentPadding: EdgeInsets.all(7),
-      leading: Column(
-        children: [
-          Image.asset(
-            isReady ? "assets/complete.png" : "assets/waiting.png",
-            width: 25,
+      contentPadding: EdgeInsets.all(12),
+      title: _buildTitle(isReady, index),
+      subtitle: _buildSubtitle(isReady, index),
+    );
+  }
+
+  Row _buildTitle(isReady, index) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Column(
+            children: [
+              Image.asset(
+                isReady ? "assets/complete.png" : "assets/waiting.png",
+                width: 25,
+                color: isReady ? Colors.green : Colors.grey,
+              ),
+              SizedBox(height: 5),
+              Text(
+                  '${widget.channels[index].confirmations} / ${widget.channels[index].confirmationsRequired!}',
+                  overflow: TextOverflow.clip,
+                  textAlign: TextAlign.start,
+                  style: TextStyle(
+                      color: Colors.black.withOpacity(.7),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500))
+            ],
           ),
-          SizedBox(height: 5),
-          Text(
-              '${widget.channels[index].confirmations} / ${widget.channels[index].confirmationsRequired!}',
-              overflow: TextOverflow.clip,
-              textAlign: TextAlign.start,
-              style: TextStyle(
-                  color: Colors.black.withOpacity(.7),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500))
-        ],
-      ),
-      title: Transform(
-        transform: Matrix4.translationValues(-16, 0.0, 0.0),
-        child: Text(
-          widget.channels[index].channelId.internal
-              .map((e) => e.toRadixString(16))
-              .toList()
-              .join()
-              .toString(),
-          overflow: TextOverflow.clip,
-          textAlign: TextAlign.start,
-          style: const TextStyle(
-              color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
         ),
-      ),
-      subtitle: Transform(
-        transform: Matrix4.translationValues(-16, 4.0, 0.0),
-        child: Column(
+        SizedBox(
+          width: 8,
+        ),
+        Flexible(
+          flex: 5,
+          child: Text(
+            widget.channels[index].channelId.data
+                .map((e) => e.toRadixString(16))
+                .toList()
+                .join()
+                .toString(),
+            overflow: TextOverflow.clip,
+            textAlign: TextAlign.start,
+            style: const TextStyle(
+                color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Column _buildSubtitle(isReady, index) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                BoxRow(
-                  title: "Capacity",
-                  value: '${widget.channels[index].channelValueSats}',
-                  color: AppColors.blue,
-                ),
-                BoxRow(
-                  title: "Local Balance",
-                  value: '${widget.channels[index].balanceMsat / 1000}',
-                  color: Colors.green,
-                ),
-              ],
+            BoxRow(
+              title: "Capacity",
+              value: '${widget.channels[index].channelValueSats}sats',
+              color: AppColors.blue,
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                BoxRow(
-                  title: "Inbound",
-                  value: '${widget.channels[index].inboundCapacityMsat / 1000}',
-                  color: Colors.green,
-                ),
-                BoxRow(
-                  title: "     Outbound",
-                  value:
-                      '${widget.channels[index].outboundCapacityMsat / 1000}',
-                  color: Colors.red,
-                )
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SmallButton(
-                  text: "Send",
-                  callback: () => {buttonPopup(context, 1, index)},
-                  disabled: !isReady,
-                ),
-                SmallButton(
-                  text: "Receive",
-                  callback: () => {buttonPopup(context, 0, index)},
-                  disabled: !isReady,
-                ),
-                SmallButton(
-                  text: "Close",
-                  callback: () => {buttonPopup(context, 2, index)},
-                  disabled: !isReady,
-                ),
-              ],
+            BoxRow(
+              title: "Local Balance",
+              value: mSatsToSats(widget.channels[index].balanceMsat),
+              color: Colors.green,
             ),
           ],
         ),
-      ),
+        SizedBox(
+          height: 8,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BoxRow(
+              title: "Inbound",
+              value: mSatsToSats(widget.channels[index].inboundCapacityMsat),
+              color: Colors.green,
+            ),
+            BoxRow(
+              title: "Outbound",
+              value: mSatsToSats(widget.channels[index].outboundCapacityMsat),
+              color: Colors.red,
+            )
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            SmallButton(
+              text: "Send",
+              callback: () => {buttonPopup(context, 1, index)},
+              disabled: !isReady,
+            ),
+            SmallButton(
+              text: "Receive",
+              callback: () => {buttonPopup(context, 0, index)},
+              disabled: !isReady,
+            ),
+            SmallButton(
+              text: "Close",
+              callback: () => {buttonPopup(context, 2, index)},
+              disabled: !isReady,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -682,7 +716,8 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                       color: Colors.black.withOpacity(.8),
                       fontSize: 12,
                       fontWeight: FontWeight.w700),
-                  decoration: const InputDecoration(labelText: 'Amount'),
+                  decoration:
+                      const InputDecoration(labelText: 'Amount in sats'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter the Amount';
@@ -721,7 +756,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         context: context,
         title: 'Send',
         widget: SizedBox(
-          height: 130,
+          height: 140,
           child: Form(
             key: _sendKey,
             child: Column(
@@ -758,7 +793,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
                       popUpWidget(
                         context: context,
                         title: "Send Status",
-                        widget: SelectableText('Invoice Paid'),
+                        widget: SelectableText('Status: $status'),
                       );
                     }
                   },
