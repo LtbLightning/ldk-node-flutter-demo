@@ -619,7 +619,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         Flexible(
           flex: 5,
           child: Text(
-            widget.channels[index].channelId.data
+            widget.channels[index].channelId.internal
                 .map((e) => e.toRadixString(16))
                 .toList()
                 .join()
