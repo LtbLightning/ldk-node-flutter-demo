@@ -1,4 +1,4 @@
-name: ldk_node_flutter_quickstart
+name: ldk_node_flutter_demo
 description: A new Flutter project.
 publish_to: "none"
 version: 1.0.0+1
@@ -10,10 +10,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.2
   path_provider: ^2.0.12
-  ldk_node:
-    git:
-      url: https://github.com/LtbLightning/ldk-node-flutter/
-      ref: main
+  ldk_node: ^0.2.0
+  rename: ^3.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

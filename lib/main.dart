@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ldk_node_flutter_quickstart/screens/home.dart';
+import 'package:ldk_node_flutter_demo/screens/home.dart';
 
 import 'styles/theme.dart';
 

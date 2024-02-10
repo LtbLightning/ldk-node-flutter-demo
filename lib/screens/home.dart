@@ -5,7 +5,7 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk;
-import 'package:ldk_node_flutter_quickstart/widgets/widgets.dart';
+import 'package:ldk_node_flutter_demo/widgets/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 
 class Home extends StatefulWidget {
@@ -35,13 +35,15 @@ class _HomeState extends State<Home> {
   buildNode(String mnemonic) async {
     final directory = await getApplicationDocumentsDirectory();
     final storagePath = "${directory.path}/$LDK_NODE_DIR";
-    print('Storage Path: $storagePath');
-    const localEsploraUrl = "http://127.0.0.1:30000";
+    debugPrint('Storage Path: $storagePath');
+    const localEsploraUrl = "https://testnet-electrs.ltbl.io:3004";
     final builder = ldk.Builder()
-        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(internal: mnemonic))
-        .setListeningAddress(
-            const ldk.NetAddress.iPv4(addr: '127.0.0.1', port: 3004))
-        .setNetwork(ldk.Network.regtest)
+        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(mnemonic))
+        .setListeningAddress([
+          const ldk.SocketAddress.hostname(
+              hostname: ldk.Hostname(internal: "0.0.0.0"), port: 3006)
+        ])
+        .setNetwork(ldk.Network.Testnet)
         .setStorageDirPath(storagePath)
         .setEsploraServer(esploraServerUrl: localEsploraUrl);
     ldkNode = await builder.build();
@@ -58,8 +60,8 @@ class _HomeState extends State<Home> {
         displayText = "${ldkNodeId?.internal}.started successfully";
       });
     } on Exception catch (e) {
-      print("Error in starting Node");
-      print(e);
+      debugPrint("Error in starting Node");
+      debugPrint(e.toString());
     }
   }
 
@@ -87,8 +89,14 @@ class _HomeState extends State<Home> {
 
   getListeningAddress() async {
     final hostAndPort = await ldkNode!.listeningAddress();
+    final addr = hostAndPort![0];
+
     setState(() {
-      listeningAddress = "${hostAndPort!.addr}:${hostAndPort.port}";
+      addr.maybeMap(
+          orElse: () {},
+          hostname: (e) {
+            listeningAddress = "${e.hostname.internal}:${e.port}";
+          });
     });
   }
 
@@ -97,8 +105,9 @@ class _HomeState extends State<Home> {
     await ldkNode!.connectOpenChannel(
         channelAmountSats: amount,
         announceChannel: true,
-        pushToCounterpartyMsat: pushToCounterpartyMsat,
-        address: ldk.NetAddress.iPv4(addr: host, port: port),
+        pushToCounterpartyMsat: satsToMsats(pushToCounterpartyMsat),
+        netaddress: ldk.SocketAddress.hostname(
+            hostname: ldk.Hostname(internal: host), port: port),
         nodeId: ldk.PublicKey(internal: nodeId));
     if (kDebugMode) {
       print("temporary channel opened");
@@ -135,8 +144,8 @@ class _HomeState extends State<Home> {
   }
 
   Future<String> sendPayment(String invoice) async {
-    final paymentHash =
-        await ldkNode!.sendPayment(invoice: ldk.Invoice(internal: invoice));
+    final paymentHash = await ldkNode!
+        .sendPayment(invoice: ldk.Bolt11Invoice(internal: invoice));
     final res = await ldkNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
@@ -144,7 +153,8 @@ class _HomeState extends State<Home> {
     return "${res?.status}";
   }
 
-  Future<void> closeChannel(ldk.ChannelId channelId, ldk.PublicKey nodeId) async {
+  Future<void> closeChannel(
+      ldk.ChannelId channelId, ldk.PublicKey nodeId) async {
     await ldkNode!.closeChannel(
       channelId: channelId,
       counterpartyNodeId: nodeId,
@@ -171,7 +181,7 @@ class _HomeState extends State<Home> {
         appBar: buildAppBar(context),
         body: SingleChildScrollView(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
             child: !started
                 ? MnemonicWidget(
                     buildCallBack: (String e) async {
