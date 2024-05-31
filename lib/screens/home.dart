@@ -39,13 +39,11 @@ class _HomeState extends State<Home> {
     const localEsploraUrl = "https://testnet-electrs.ltbl.io:3004";
     final builder = ldk.Builder()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(mnemonic))
-        .setListeningAddress([
-          const ldk.SocketAddress.hostname(
-              hostname: ldk.Hostname(internal: "0.0.0.0"), port: 3006)
-        ])
+        .setListeningAddresses(
+            [const ldk.SocketAddress.hostname(addr: "0.0.0.0", port: 3005)])
         .setNetwork(ldk.Network.Testnet)
         .setStorageDirPath(storagePath)
-        .setEsploraServer(esploraServerUrl: localEsploraUrl);
+        .setEsploraServer(localEsploraUrl);
     ldkNode = await builder.build();
     await start();
     await getListeningAddress();
@@ -57,7 +55,7 @@ class _HomeState extends State<Home> {
       ldkNodeId = await ldkNode!.nodeId();
       setState(() {
         started = true;
-        displayText = "${ldkNodeId?.internal}.started successfully";
+        displayText = "${ldkNodeId?.hexCode}.started successfully";
       });
     } on Exception catch (e) {
       debugPrint("Error in starting Node");
@@ -80,22 +78,22 @@ class _HomeState extends State<Home> {
   newFundingAddress() async {
     final ldkNodeAddress = await ldkNode!.newOnchainAddress();
     if (kDebugMode) {
-      print("ldkNode's address: ${ldkNodeAddress.internal}");
+      print("ldkNode's address: ${ldkNodeAddress.s}");
     }
     setState(() {
-      fundingAddress = ldkNodeAddress.internal;
+      fundingAddress = ldkNodeAddress.s;
     });
   }
 
   getListeningAddress() async {
-    final hostAndPort = await ldkNode!.listeningAddress();
+    final hostAndPort = await ldkNode!.listeningAddresses();
     final addr = hostAndPort![0];
 
     setState(() {
       addr.maybeMap(
           orElse: () {},
           hostname: (e) {
-            listeningAddress = "${e.hostname.internal}:${e.port}";
+            listeningAddress = "${e.addr}:${e.port}";
           });
     });
   }
@@ -106,9 +104,8 @@ class _HomeState extends State<Home> {
         channelAmountSats: amount,
         announceChannel: true,
         pushToCounterpartyMsat: satsToMsats(pushToCounterpartyMsat),
-        netaddress: ldk.SocketAddress.hostname(
-            hostname: ldk.Hostname(internal: host), port: port),
-        nodeId: ldk.PublicKey(internal: nodeId));
+        netaddress: ldk.SocketAddress.hostname(addr: host, port: port),
+        nodeId: ldk.PublicKey(hexCode: nodeId));
     if (kDebugMode) {
       print("temporary channel opened");
     }
@@ -132,20 +129,24 @@ class _HomeState extends State<Home> {
   }
 
   Future<String> receivePayment(int amount) async {
-    final invoice = await ldkNode!
-        .receivePayment(amountMsat: amount, description: '', expirySecs: 10000);
+    final invoice = await ldkNode!.receivePayment(
+      amountMsat: satsToMsats(amount),
+      description: 'test',
+      expirySecs: 9000,
+    );
     setState(() {
       if (kDebugMode) {
-        print(invoice.internal.toString());
+        print(invoice.signedRawInvoice.toString());
       }
-      displayText = "Receive payment invoice${invoice.internal.toString()}";
+      displayText =
+          "Receive payment invoice${invoice.signedRawInvoice.toString()}";
     });
-    return invoice.internal.toString();
+    return invoice.signedRawInvoice.toString();
   }
 
   Future<String> sendPayment(String invoice) async {
     final paymentHash = await ldkNode!
-        .sendPayment(invoice: ldk.Bolt11Invoice(internal: invoice));
+        .sendPayment(invoice: ldk.Bolt11Invoice(signedRawInvoice: invoice));
     final res = await ldkNode!.payment(paymentHash: paymentHash);
     setState(() {
       displayText = "send payment success ${res?.status}";
@@ -193,7 +194,7 @@ class _HomeState extends State<Home> {
                       /* Balance */
                       BalanceWidget(
                         balance: ldkNodeBalance,
-                        nodeId: ldkNodeId!.internal,
+                        nodeId: ldkNodeId!.hexCode,
                         fundingAddress: fundingAddress,
                         listeningAddress: listeningAddress,
                       ),

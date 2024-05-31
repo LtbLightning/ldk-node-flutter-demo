@@ -254,10 +254,11 @@ packages:
   ldk_node:
     dependency: "direct main"
     description:
-      name: ldk_node
-      sha256: "16c74a6cf764147de8a015fdb16d2b452cdf06507309ebf09e6af8b5cae0a7a2"
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "v0.2.1"
+      resolved-ref: "8cfef21ca46470c3469df78f35c24cf967665c2d"
+      url: "https://github.com/XLTBLX-Tech/ldk_node_flutter"
+    source: git
     version: "0.2.0"
   lints:
     dependency: transitive
