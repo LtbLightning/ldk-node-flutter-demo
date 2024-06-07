@@ -38,10 +38,10 @@ class _HomeState extends State<Home> {
     debugPrint('Storage Path: $storagePath');
     const localEsploraUrl = "https://testnet-electrs.ltbl.io:3004";
     final builder = ldk.Builder()
-        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(mnemonic))
+        .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(seedPhrase: mnemonic))
         .setListeningAddresses(
             [const ldk.SocketAddress.hostname(addr: "0.0.0.0", port: 3005)])
-        .setNetwork(ldk.Network.Testnet)
+        .setNetwork(ldk.Network.testnet)
         .setStorageDirPath(storagePath)
         .setEsploraServer(localEsploraUrl);
     ldkNode = await builder.build();
@@ -55,7 +55,7 @@ class _HomeState extends State<Home> {
       ldkNodeId = await ldkNode!.nodeId();
       setState(() {
         started = true;
-        displayText = "${ldkNodeId?.hexCode}.started successfully";
+        displayText = "${ldkNodeId?.hex}.started successfully";
       });
     } on Exception catch (e) {
       debugPrint("Error in starting Node");
@@ -104,8 +104,8 @@ class _HomeState extends State<Home> {
         channelAmountSats: amount,
         announceChannel: true,
         pushToCounterpartyMsat: satsToMsats(pushToCounterpartyMsat),
-        netaddress: ldk.SocketAddress.hostname(addr: host, port: port),
-        nodeId: ldk.PublicKey(hexCode: nodeId));
+        socketAddress: ldk.SocketAddress.hostname(addr: host, port: port),
+        nodeId: ldk.PublicKey(hex: nodeId));
     if (kDebugMode) {
       print("temporary channel opened");
     }
@@ -194,7 +194,7 @@ class _HomeState extends State<Home> {
                       /* Balance */
                       BalanceWidget(
                         balance: ldkNodeBalance,
-                        nodeId: ldkNodeId!.hexCode,
+                        nodeId: ldkNodeId!.hex,
                         fundingAddress: fundingAddress,
                         listeningAddress: listeningAddress,
                       ),
