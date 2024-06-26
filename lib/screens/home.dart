@@ -36,14 +36,9 @@ class _HomeState extends State<Home> {
     final directory = await getApplicationDocumentsDirectory();
     final storagePath = "${directory.path}/$LDK_NODE_DIR";
     debugPrint('Storage Path: $storagePath');
-    const localEsploraUrl = "https://testnet-electrs.ltbl.io:3004";
-    final builder = ldk.Builder()
+    final builder = ldk.Builder.mutinynet()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(seedPhrase: mnemonic))
-        .setListeningAddresses(
-            [const ldk.SocketAddress.hostname(addr: "0.0.0.0", port: 3005)])
-        .setNetwork(ldk.Network.testnet)
-        .setStorageDirPath(storagePath)
-        .setEsploraServer(localEsploraUrl);
+        .setStorageDirPath(storagePath);
     ldkNode = await builder.build();
     await start();
     await getListeningAddress();
@@ -65,9 +60,9 @@ class _HomeState extends State<Home> {
 
   onChainBalance() async {
     await ldkNode!.syncWallets();
-    final balance = await ldkNode!.totalOnchainBalanceSats();
+    final balances = await ldkNode!.listBalances();
     setState(() {
-      ldkNodeBalance = balance;
+      ldkNodeBalance = balances.totalOnchainBalanceSats;
     });
 
     if (kDebugMode) {
@@ -76,12 +71,13 @@ class _HomeState extends State<Home> {
   }
 
   newFundingAddress() async {
-    final ldkNodeAddress = await ldkNode!.newOnchainAddress();
+    final onChainPayment = await ldkNode!.onChainPayment();
+    final onChainAddress = await onChainPayment.newAddress();
     if (kDebugMode) {
-      print("ldkNode's address: ${ldkNodeAddress.s}");
+      print("ldkNode's address: ${onChainAddress.s}");
     }
     setState(() {
-      fundingAddress = ldkNodeAddress.s;
+      fundingAddress = onChainAddress.s;
     });
   }
 
@@ -128,12 +124,22 @@ class _HomeState extends State<Home> {
     }
   }
 
-  Future<String> receivePayment(int amount) async {
-    final invoice = await ldkNode!.receivePayment(
-      amountMsat: satsToMsats(amount),
-      description: 'test',
-      expirySecs: 9000,
-    );
+  Future<String> receivePayment(
+    int amount, {
+    bool requestJitChannel = false,
+  }) async {
+    final bolt11Payment = await ldkNode!.bolt11Payment();
+    final invoice = requestJitChannel
+        ? await bolt11Payment.receiveViaJitChannel(
+            amountMsat: satsToMsats(amount),
+            description: 'test',
+            expirySecs: 9000,
+          )
+        : await bolt11Payment.receive(
+            amountMsat: satsToMsats(amount),
+            description: 'test',
+            expirySecs: 9000,
+          );
     setState(() {
       if (kDebugMode) {
         print(invoice.signedRawInvoice.toString());
@@ -145,9 +151,14 @@ class _HomeState extends State<Home> {
   }
 
   Future<String> sendPayment(String invoice) async {
-    final paymentHash = await ldkNode!
-        .sendPayment(invoice: ldk.Bolt11Invoice(signedRawInvoice: invoice));
-    final res = await ldkNode!.payment(paymentHash: paymentHash);
+    final bolt11Payment = await ldkNode!.bolt11Payment();
+    final paymentId = await bolt11Payment.send(
+      invoice: ldk.Bolt11Invoice(
+        signedRawInvoice: invoice,
+      ),
+    );
+
+    final res = await ldkNode!.payment(paymentId: paymentId);
     setState(() {
       displayText = "send payment success ${res?.status}";
     });
@@ -155,9 +166,9 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> closeChannel(
-      ldk.ChannelId channelId, ldk.PublicKey nodeId) async {
+      ldk.UserChannelId channelId, ldk.PublicKey nodeId) async {
     await ldkNode!.closeChannel(
-      channelId: channelId,
+      userChannelId: channelId,
       counterpartyNodeId: nodeId,
     );
 
@@ -207,6 +218,18 @@ class _HomeState extends State<Home> {
                       SubmitButton(
                         text: 'New Funding Address',
                         callback: newFundingAddress,
+                      ),
+                      /* Receive via JIT Channel */
+                      SubmitButton(
+                        text: 'Receive via JIT Channel',
+                        callback: () => popUpWidget(
+                          context: context,
+                          title: 'Receive via JIT Channel',
+                          widget: ReceivePopupWidget(
+                            receivePaymentCallBack: receivePayment,
+                            requestJitChannel: true,
+                          ),
+                        ),
                       ),
                       SubmitButton(
                         text: 'List Channels',
