@@ -542,9 +542,12 @@ class _ChannelsActionBarState extends State<ChannelsActionBar> {
 
 class ChannelListWidget extends StatefulWidget {
   final List<ldk.ChannelDetails> channels;
-  final Future<void> Function(ldk.ChannelId channelId, ldk.PublicKey nodeId)
+  final Future<void> Function(ldk.UserChannelId channelId, ldk.PublicKey nodeId)
       closeChannelCallBack;
-  final Future<String> Function(int amount) receivePaymentCallBack;
+  final Future<String> Function(
+    int amount, {
+    bool requestJitChannel,
+  }) receivePaymentCallBack;
   final Future<String> Function(String invoice) sendPaymentCallBack;
   const ChannelListWidget({
     Key? key,
@@ -649,7 +652,7 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
             ),
             BoxRow(
               title: "Local Balance",
-              value: mSatsToSats(widget.channels[index].balanceMsat),
+              value: mSatsToSats(widget.channels[index].outboundCapacityMsat),
               color: Colors.green,
             ),
           ],
@@ -703,52 +706,9 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
       popUpWidget(
         context: context,
         title: 'Receive',
-        widget: IntrinsicHeight(
-          // height: 200,
-          child: Form(
-            key: _receiveKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                TextFormField(
-                  keyboardType: TextInputType.number,
-                  style: TextStyle(
-                      color: Colors.black.withOpacity(.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700),
-                  decoration:
-                      const InputDecoration(labelText: 'Amount in sats'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the Amount';
-                    }
-                    setState(() {
-                      amount = int.parse(value);
-                    });
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 5),
-                SubmitButton(
-                  text: 'Receive',
-                  callback: () async {
-                    if (_receiveKey.currentState!.validate()) {
-                      String invoiceText =
-                          await widget.receivePaymentCallBack(amount);
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                      popUpWidget(
-                        context: context,
-                        title: "Invoice",
-                        widget: SelectableText(invoiceText),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
+        widget: ReceivePopupWidget(
+          receivePaymentCallBack: widget.receivePaymentCallBack,
+          requestJitChannel: false,
         ),
       );
     } else if (value == 1) {
@@ -804,8 +764,82 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         ),
       );
     } else if (value == 2) {
-      widget.closeChannelCallBack(widget.channels[index].channelId,
+      widget.closeChannelCallBack(widget.channels[index].userChannelId,
           widget.channels[index].counterpartyNodeId);
     }
+  }
+}
+
+class ReceivePopupWidget extends StatefulWidget {
+  final Future<String> Function(
+    int amount, {
+    bool requestJitChannel,
+  }) receivePaymentCallBack;
+  final bool requestJitChannel;
+
+  const ReceivePopupWidget({
+    Key? key,
+    required this.receivePaymentCallBack,
+    this.requestJitChannel = false,
+  }) : super(key: key);
+
+  @override
+  State<ReceivePopupWidget> createState() => _ReceivePopupWidgetState();
+}
+
+class _ReceivePopupWidgetState extends State<ReceivePopupWidget> {
+  final _formKey = GlobalKey<FormState>();
+  int amount = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      // height: 200,
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            TextFormField(
+              keyboardType: TextInputType.number,
+              style: TextStyle(
+                  color: Colors.black.withOpacity(.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700),
+              decoration: const InputDecoration(labelText: 'Amount in sats'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter the Amount';
+                }
+                setState(() {
+                  amount = int.parse(value);
+                });
+                return null;
+              },
+            ),
+            const SizedBox(height: 5),
+            SubmitButton(
+              text: 'Receive',
+              callback: () async {
+                if (_formKey.currentState!.validate()) {
+                  String invoiceText = await widget.receivePaymentCallBack(
+                    amount,
+                    requestJitChannel: widget.requestJitChannel,
+                  );
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                  popUpWidget(
+                    context: context,
+                    title: "Invoice",
+                    widget: SelectableText(invoiceText),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
