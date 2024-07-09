@@ -544,10 +544,7 @@ class ChannelListWidget extends StatefulWidget {
   final List<ldk.ChannelDetails> channels;
   final Future<void> Function(ldk.UserChannelId channelId, ldk.PublicKey nodeId)
       closeChannelCallBack;
-  final Future<String> Function(
-    int amount, {
-    bool requestJitChannel,
-  }) receivePaymentCallBack;
+  final Future<String> Function({int? amount}) receivePaymentCallBack;
   final Future<String> Function(String invoice) sendPaymentCallBack;
   const ChannelListWidget({
     Key? key,
@@ -564,7 +561,6 @@ class ChannelListWidget extends StatefulWidget {
 class _ChannelListWidgetState extends State<ChannelListWidget> {
   int amount = 0;
   String address = "";
-  final _receiveKey = GlobalKey<FormState>();
   final _sendKey = GlobalKey<FormState>();
   String invoice = "";
 
@@ -652,7 +648,8 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
             ),
             BoxRow(
               title: "Local Balance",
-              value: mSatsToSats(widget.channels[index].outboundCapacityMsat),
+              value: mSatsToSats(
+                  widget.channels[index].outboundCapacityMsat.toInt()),
               color: Colors.green,
             ),
           ],
@@ -666,12 +663,14 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
           children: [
             BoxRow(
               title: "Inbound",
-              value: mSatsToSats(widget.channels[index].inboundCapacityMsat),
+              value: mSatsToSats(
+                  widget.channels[index].inboundCapacityMsat.toInt()),
               color: Colors.green,
             ),
             BoxRow(
               title: "Outbound",
-              value: mSatsToSats(widget.channels[index].outboundCapacityMsat),
+              value: mSatsToSats(
+                  widget.channels[index].outboundCapacityMsat.toInt()),
               color: Colors.red,
             )
           ],
@@ -708,7 +707,6 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
         title: 'Receive',
         widget: ReceivePopupWidget(
           receivePaymentCallBack: widget.receivePaymentCallBack,
-          requestJitChannel: false,
         ),
       );
     } else if (value == 1) {
@@ -771,16 +769,11 @@ class _ChannelListWidgetState extends State<ChannelListWidget> {
 }
 
 class ReceivePopupWidget extends StatefulWidget {
-  final Future<String> Function(
-    int amount, {
-    bool requestJitChannel,
-  }) receivePaymentCallBack;
-  final bool requestJitChannel;
+  final Future<String> Function({int? amount}) receivePaymentCallBack;
 
   const ReceivePopupWidget({
     Key? key,
     required this.receivePaymentCallBack,
-    this.requestJitChannel = false,
   }) : super(key: key);
 
   @override
@@ -823,8 +816,7 @@ class _ReceivePopupWidgetState extends State<ReceivePopupWidget> {
               callback: () async {
                 if (_formKey.currentState!.validate()) {
                   String invoiceText = await widget.receivePaymentCallBack(
-                    amount,
-                    requestJitChannel: widget.requestJitChannel,
+                    amount: amount,
                   );
                   if (context.mounted) {
                     Navigator.of(context).pop();
