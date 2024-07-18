@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -33,12 +34,9 @@ class _HomeState extends State<Home> {
   }
 
   buildNode(String mnemonic) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final storagePath = "${directory.path}/$LDK_NODE_DIR";
-    debugPrint('Storage Path: $storagePath');
     final builder = ldk.Builder.mutinynet()
         .setEntropyBip39Mnemonic(mnemonic: ldk.Mnemonic(seedPhrase: mnemonic))
-        .setStorageDirPath(storagePath);
+        .setStorageDirPath(await _storagePath());
     ldkNode = await builder.build();
     await start();
     await getListeningAddress();
@@ -62,12 +60,14 @@ class _HomeState extends State<Home> {
     await ldkNode!.syncWallets();
     final balances = await ldkNode!.listBalances();
     setState(() {
-      ldkNodeBalance = balances.totalOnchainBalanceSats;
+      ldkNodeBalance = balances.totalOnchainBalanceSats.toInt();
     });
 
     if (kDebugMode) {
       print("Wallet onchain balance: $ldkNodeBalance");
     }
+
+    await _printLogs();
   }
 
   newFundingAddress() async {
@@ -97,9 +97,10 @@ class _HomeState extends State<Home> {
   Future<void> connectOpenChannel(String host, int port, String nodeId,
       int amount, int pushToCounterpartyMsat) async {
     await ldkNode!.connectOpenChannel(
-        channelAmountSats: amount,
+        channelAmountSats: BigInt.from(amount),
         announceChannel: true,
-        pushToCounterpartyMsat: satsToMsats(pushToCounterpartyMsat),
+        pushToCounterpartyMsat:
+            BigInt.from(satsToMsats(pushToCounterpartyMsat)),
         socketAddress: ldk.SocketAddress.hostname(addr: host, port: port),
         nodeId: ldk.PublicKey(hex: nodeId));
     if (kDebugMode) {
@@ -124,22 +125,46 @@ class _HomeState extends State<Home> {
     }
   }
 
+/*
   Future<String> receivePayment(
     int amount, {
+    bool bolt12Payment = false,
     bool requestJitChannel = false,
   }) async {
-    final bolt11Payment = await ldkNode!.bolt11Payment();
-    final invoice = requestJitChannel
-        ? await bolt11Payment.receiveViaJitChannel(
-            amountMsat: satsToMsats(amount),
-            description: 'test',
-            expirySecs: 9000,
-          )
-        : await bolt11Payment.receive(
-            amountMsat: satsToMsats(amount),
-            description: 'test',
-            expirySecs: 9000,
-          );
+    if (bolt12Payment) {
+      return _receiveBolt12Payment(amount);
+    } else {
+      return _receiveBolt11Payment(amount,
+          requestJitChannel: requestJitChannel);
+    }
+  }*/
+
+  Future<String> receiveBolt11Payment({
+    int? amount,
+    String? description = 'test',
+    int? expirySecs = 3600,
+    bool? requestJitChannel = false,
+  }) async {
+    ldk.Bolt11Invoice invoice;
+    if (requestJitChannel == true) {
+      invoice = await _receiveViaJitChannel(
+        amount: amount,
+        description: description!,
+        expirySecs: expirySecs!,
+      );
+    } else {
+      final bolt11Payment = await ldkNode!.bolt11Payment();
+      invoice = amount == null
+          ? await bolt11Payment.receiveVariableAmount(
+              description: description!,
+              expirySecs: expirySecs!,
+            )
+          : await bolt11Payment.receive(
+              amountMsat: BigInt.from(satsToMsats(amount)),
+              description: description!,
+              expirySecs: expirySecs!,
+            );
+    }
     setState(() {
       if (kDebugMode) {
         print(invoice.signedRawInvoice.toString());
@@ -148,6 +173,43 @@ class _HomeState extends State<Home> {
           "Receive payment invoice${invoice.signedRawInvoice.toString()}";
     });
     return invoice.signedRawInvoice.toString();
+  }
+
+  Future<ldk.Bolt11Invoice> _receiveViaJitChannel({
+    int? amount,
+    required String description,
+    required int expirySecs,
+  }) async {
+    final bolt11Payment = await ldkNode!.bolt11Payment();
+    return amount == null
+        ? await bolt11Payment.receiveVariableAmountViaJitChannel(
+            description: description, expirySecs: expirySecs)
+        : await bolt11Payment.receiveViaJitChannel(
+            amountMsat: BigInt.from(satsToMsats(amount)),
+            description: description,
+            expirySecs: expirySecs);
+  }
+
+  Future<String> receiveBolt12Payment({
+    int? amount,
+    String? description = 'test',
+  }) async {
+    final bolt12Payment = await ldkNode!.bolt12Payment();
+    final offer = amount == null
+        ? await bolt12Payment.receiveVariableAmount(
+            description: description!,
+          )
+        : await bolt12Payment.receive(
+            amountMsat: BigInt.from(satsToMsats(amount)),
+            description: description!,
+          );
+    setState(() {
+      if (kDebugMode) {
+        print(offer.s);
+      }
+      displayText = "Receive payment offer${offer.s}";
+    });
+    return offer.s;
   }
 
   Future<String> sendPayment(String invoice) async {
@@ -177,6 +239,28 @@ class _HomeState extends State<Home> {
 
   stop() async {
     await ldkNode!.stop();
+  }
+
+  Future<String> _storagePath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final storagePath = "${directory.path}/$LDK_NODE_DIR";
+    debugPrint('Storage Path: $storagePath');
+    return storagePath;
+  }
+
+  Future<void> _printLogs() async {
+    final logsFile = File('${await _storagePath()}/logs/ldk_node_latest.log');
+    String contents = await logsFile.readAsString();
+
+    // Define the maximum length of each chunk to be printed
+    const int chunkSize = 1024;
+
+    // Split the contents into chunks and print each chunk
+    for (int i = 0; i < contents.length; i += chunkSize) {
+      int end =
+          (i + chunkSize < contents.length) ? i + chunkSize : contents.length;
+      print(contents.substring(i, end));
+    }
   }
 
   @override
@@ -221,13 +305,27 @@ class _HomeState extends State<Home> {
                       ),
                       /* Receive via JIT Channel */
                       SubmitButton(
-                        text: 'Receive via JIT Channel',
+                        text: 'Receive via Lightning',
                         callback: () => popUpWidget(
                           context: context,
-                          title: 'Receive via JIT Channel',
+                          title: 'Receive via Lightning',
                           widget: ReceivePopupWidget(
-                            receivePaymentCallBack: receivePayment,
-                            requestJitChannel: true,
+                            receivePaymentCallBack: ({int? amount}) =>
+                                receiveBolt11Payment(
+                              amount: amount,
+                              requestJitChannel: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                      /* New Bolt12 Offer */
+                      SubmitButton(
+                        text: 'New Bolt12 Offer',
+                        callback: () => popUpWidget(
+                          context: context,
+                          title: 'Receive via Bolt12 Offer',
+                          widget: ReceivePopupWidget(
+                            receivePaymentCallBack: receiveBolt12Payment,
                           ),
                         ),
                       ),
@@ -237,7 +335,8 @@ class _HomeState extends State<Home> {
                       ),
                       /* ChannelsActionBar */
                       ChannelsActionBar(
-                          openChannelCallBack: connectOpenChannel),
+                        openChannelCallBack: connectOpenChannel,
+                      ),
                       channels.isEmpty
                           ? const Text(
                               'No Open Channels',
@@ -251,7 +350,7 @@ class _HomeState extends State<Home> {
                           : ChannelListWidget(
                               channels: channels,
                               closeChannelCallBack: closeChannel,
-                              receivePaymentCallBack: receivePayment,
+                              receivePaymentCallBack: receiveBolt11Payment,
                               sendPaymentCallBack: sendPayment,
                             )
                     ],
